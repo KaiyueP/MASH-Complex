@@ -1,0 +1,15 @@
+# Spin-boson benchmark model with Debye bath
+#
+# System
+-model lvc
+-T 300.0
+#
+# MASH
+-init 8
+-nucsamp classical
+#
+# Convergence
+-ntraj 12800
+-nt    3000
+-dt    40.0
+-npar 128

@@ -1,0 +1,195 @@
+make -C src debug
+make[1]: Entering directory '/global/u2/b/bkhou/code_base/multimash/src'
+f2py --fcompiler=gnu95 -c -m mashf90 types.o maths.o pes.o linvib.o frexc.o tully.o mash.o f2py.f90 -llapack -lblas
+running build
+running config_cc
+INFO: unifing config_cc, config, build_clib, build_ext, build commands --compiler options
+running config_fc
+INFO: unifing config_fc, config, build_clib, build_ext, build commands --fcompiler options
+running build_src
+INFO: build_src
+INFO: building extension "mashf90" sources
+INFO: f2py options: []
+INFO: f2py:> /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90module.c
+creating /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9
+Reading f2cmap from '.f2py_f2cmap' ...
+	Mapping "real(kind=dp)" to "double"
+	Mapping "complex(kind=dpc)" to "complex_double"
+Successfully applied user defined f2cmap changes
+Reading fortran codes...
+	Reading file 'f2py.f90' (format:free)
+Post-processing...
+	Block: mashf90
+			Block: init_linvib
+In: :mashf90:f2py.f90:init_linvib
+get_useparameters: no module types info used by init_linvib
+In: :mashf90:f2py.f90:init_linvib
+get_useparameters: no module linvib info used by init_linvib
+			Block: init_frexc
+In: :mashf90:f2py.f90:init_frexc
+get_useparameters: no module types info used by init_frexc
+In: :mashf90:f2py.f90:init_frexc
+get_useparameters: no module frexc info used by init_frexc
+			Block: init_tully
+In: :mashf90:f2py.f90:init_tully
+get_useparameters: no module types info used by init_tully
+In: :mashf90:f2py.f90:init_tully
+get_useparameters: no module tully info used by init_tully
+			Block: init_mash
+In: :mashf90:f2py.f90:init_mash
+get_useparameters: no module types info used by init_mash
+In: :mashf90:f2py.f90:init_mash
+get_useparameters: no module mash info used by init_mash
+			Block: get_vad
+In: :mashf90:f2py.f90:get_vad
+get_useparameters: no module types info used by get_vad
+In: :mashf90:f2py.f90:get_vad
+get_useparameters: no module pes info used by get_vad
+			Block: pot_mat
+In: :mashf90:f2py.f90:pot_mat
+get_useparameters: no module types info used by pot_mat
+In: :mashf90:f2py.f90:pot_mat
+get_useparameters: no module pes info used by pot_mat
+{}
+In: :mashf90:f2py.f90:mashpot
+vars2fortran: No typespec for argument "ns".
+			Block: mashpot
+In: :mashf90:f2py.f90:mashpot
+get_useparameters: no module types info used by mashpot
+In: :mashf90:f2py.f90:mashpot
+get_useparameters: no module mash info used by mashpot
+			Block: mashgrad
+In: :mashf90:f2py.f90:mashgrad
+get_useparameters: no module types info used by mashgrad
+In: :mashf90:f2py.f90:mashgrad
+get_useparameters: no module pes info used by mashgrad
+In: :mashf90:f2py.f90:mashgrad
+get_useparameters: no module mash info used by mashgrad
+			Block: nac
+In: :mashf90:f2py.f90:nac
+get_useparameters: no module types info used by nac
+In: :mashf90:f2py.f90:nac
+get_useparameters: no module pes info used by nac
+			Block: mashnacdir
+In: :mashf90:f2py.f90:mashnacdir
+get_useparameters: no module types info used by mashnacdir
+In: :mashf90:f2py.f90:mashnacdir
+get_useparameters: no module pes info used by mashnacdir
+			Block: dia2ad
+In: :mashf90:f2py.f90:dia2ad
+get_useparameters: no module types info used by dia2ad
+In: :mashf90:f2py.f90:dia2ad
+get_useparameters: no module pes info used by dia2ad
+			Block: mash_pops
+In: :mashf90:f2py.f90:mash_pops
+get_useparameters: no module types info used by mash_pops
+In: :mashf90:f2py.f90:mash_pops
+get_useparameters: no module mash info used by mash_pops
+			Block: runtrj
+In: :mashf90:f2py.f90:runtrj
+get_useparameters: no module types info used by runtrj
+In: :mashf90:f2py.f90:runtrj
+get_useparameters: no module pes info used by runtrj
+In: :mashf90:f2py.f90:runtrj
+get_useparameters: no module mash info used by runtrj
+			Block: runpar
+In: :mashf90:f2py.f90:runpar
+get_useparameters: no module types info used by runpar
+In: :mashf90:f2py.f90:runpar
+get_useparameters: no module mash info used by runpar
+In: :mashf90:f2py.f90:runpar
+get_useparameters: no module omp_lib info used by runpar
+Applying post-processing hooks...
+  character_backward_compatibility_hook
+Post-processing (stage 2)...
+Building modules...
+    Building module "mashf90"...
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "init_linvib"...
+          init_linvib(mass,omega,vconst,vlin,[nf,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "init_frexc"...
+          init_frexc(mass,omega,vconst,kappa,[nf,nf_bath,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "init_tully"...
+          init_tully(model,mass)
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "init_mash"...
+          init_mash(beta)
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "get_vad"...
+          vad,u = get_vad(q,ns,[nf])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "pot_mat"...
+          v,dvdq = pot_mat(q,ns_,[nf_])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "mashpot"...
+          v = mashpot(q,qe,pe,[nf,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "mashgrad"...
+          dvdq = mashgrad(q,qe,pe,[nf_,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "nac"...
+          d = nac(q,ns,[nf])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "mashnacdir"...
+          d = mashnacdir(q,cad,vad,u,n,m,[nf,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "dia2ad"...
+          qa,pa = dia2ad(q,qe,pe,[nf,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "mash_pops"...
+          pop = mash_pops(q,qe,pe,rep,[nf,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "runtrj"...
+          qt,pt,qet,pet,at,et,ierr = runtrj(q,p,qe,pe,dt,nt,[nf_,ns])
+    Generating possibly empty wrappers"
+    Maybe empty "mashf90-f2pywrappers.f"
+        Constructing wrapper function "runpar"...
+          bt,et,ierr = runpar(q,p,qe,pe,rep,dt,nt,[nf,ns,np])
+    Wrote C/API module "mashf90" to file "/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90module.c"
+INFO:   adding '/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/fortranobject.c' to sources.
+INFO:   adding '/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9' to include_dirs.
+copying /global/homes/b/bkhou/.conda/envs/mash_env_new/lib/python3.9/site-packages/numpy/f2py/src/fortranobject.c -> /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9
+copying /global/homes/b/bkhou/.conda/envs/mash_env_new/lib/python3.9/site-packages/numpy/f2py/src/fortranobject.h -> /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9
+INFO:   adding '/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90-f2pywrappers.f' to sources.
+INFO: build_src: building npy-pkg config files
+running build_ext
+INFO: customize UnixCCompiler
+INFO: customize UnixCCompiler using build_ext
+INFO: customize Gnu95FCompiler
+INFO: Found executable /usr/bin/gfortran
+INFO: customize Gnu95FCompiler using build_ext
+INFO: building 'mashf90' extension
+INFO: compiling C sources
+INFO: C compiler: gcc -pthread -B /global/homes/b/bkhou/.conda/envs/mash_env_new/compiler_compat -Wno-unused-result -Wsign-compare -DNDEBUG -fwrapv -O2 -Wall -fPIC -O2 -isystem /global/homes/b/bkhou/.conda/envs/mash_env_new/include -fPIC -O2 -isystem /global/homes/b/bkhou/.conda/envs/mash_env_new/include -fPIC
+
+creating /tmp/tmpg9nl2lqu/tmp
+creating /tmp/tmpg9nl2lqu/tmp/tmpg9nl2lqu
+creating /tmp/tmpg9nl2lqu/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9
+INFO: compile options: '-DNPY_DISABLE_OPTIMIZATION=1 -I/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9 -I/global/homes/b/bkhou/.conda/envs/mash_env_new/lib/python3.9/site-packages/numpy/core/include -I/global/homes/b/bkhou/.conda/envs/mash_env_new/include/python3.9 -c'
+INFO: gcc: /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90module.c
+INFO: gcc: /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/fortranobject.c
+INFO: compiling Fortran sources
+INFO: Fortran f77 compiler: /usr/bin/gfortran -Wall -g -ffixed-form -fno-second-underscore -fPIC -O3 -funroll-loops
+Fortran f90 compiler: /usr/bin/gfortran -Wall -g -fno-second-underscore -fPIC -O3 -funroll-loops
+Fortran fix compiler: /usr/bin/gfortran -Wall -g -ffixed-form -fno-second-underscore -Wall -g -fno-second-underscore -fPIC -O3 -funroll-loops
+INFO: compile options: '-I/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9 -I/global/homes/b/bkhou/.conda/envs/mash_env_new/lib/python3.9/site-packages/numpy/core/include -I/global/homes/b/bkhou/.conda/envs/mash_env_new/include/python3.9 -c'
+INFO: gfortran:f90: f2py.f90
+INFO: gfortran:f77: /tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90-f2pywrappers.f
+INFO: /usr/bin/gfortran -Wall -g -Wall -g -shared /tmp/tmpg9nl2lqu/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90module.o /tmp/tmpg9nl2lqu/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/fortranobject.o /tmp/tmpg9nl2lqu/f2py.o /tmp/tmpg9nl2lqu/tmp/tmpg9nl2lqu/src.linux-x86_64-3.9/mashf90-f2pywrappers.o types.o maths.o pes.o linvib.o frexc.o tully.o mash.o -L/usr/lib64/gcc/x86_64-suse-linux/12 -L/usr/lib64/gcc/x86_64-suse-linux/12 -llapack -lblas -lgfortran -o ./mashf90.cpython-39-x86_64-linux-gnu.so
+Removing build directory /tmp/tmpg9nl2lqu
+make[1]: Leaving directory '/global/u2/b/bkhou/code_base/multimash/src'

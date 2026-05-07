@@ -1,0 +1,19 @@
+# Spin-boson benchmark model with Debye bath
+
+# System model
+-model tc
+# Temperature
+-T 300.0
+
+# MASH initial state index and nuclear sammpling
+-init 8
+-nucsamp classical
+#
+# Convergence
+-ntraj 12800
+#Number of time steps per trajectory in au, au = fs * 41.34136
+-nt    3000
+#Time step size in au, au = fs * 41.34136
+-dt    40.0
+#number of thread per mpi
+-npar 128

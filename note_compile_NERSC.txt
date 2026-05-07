@@ -1,0 +1,33 @@
+# versions of mash:
+# mash --updated version on Gitlab
+# multimash --updated version on GitHub
+# mash_old --old version on GitHub
+
+
+# 1. Log in to Perlmutter
+ssh your_user@perlmutter.nersc.gov
+
+# 2. Load Python
+module load python
+
+# 3. Create and activate Conda environment
+conda create -n myenv python=3.9
+conda activate myenv
+
+# 4. Install requirements
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# 5. Load compiler modules
+module load PrgEnv-gnu
+module load cmake
+
+# 6. Compile the code
+cd /path/to/project
+make clean
+make dev
+
+# 7. Run your code
+./src/my_executable   # if your Makefile produces a bin in 'src/'
+# or 
+python main.py        # if your main is Python-based

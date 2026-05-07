@@ -1,0 +1,27 @@
+{
+    "C_Cpp.errorSquiggles": "enabled"
+    ,"files.associations": {
+        "*.f90": "FortranFreeForm",
+        "*.F90": "FortranFreeForm",
+        "*.f95": "FortranFreeForm",
+        "*.F95": "FortranFreeForm",
+        "*.f03": "FortranFreeForm",
+        "*.F03": "FortranFreeForm",
+        "*.f08": "FortranFreeForm",
+        "*.F08": "FortranFreeForm",
+        "*.f": "FortranFixedForm",
+        "*.F": "FortranFixedForm",
+        "*.for": "FortranFixedForm",
+        "*.FOR": "FortranFixedForm",
+        "*.f77": "FortranFixedForm",
+        "*.F77": "FortranFixedForm"
+    }
+    ,"fortran.fortls.disabled": false
+    ,"fortran.fortls.path": "/global/homes/k/kaiyuep/.local/bin/fortls"
+    ,"fortran.fortls.disableDiagnostics": false
+    ,"fortran.linter.compiler": "gfortran"
+    ,"fortran.linter.compilerPath": "/opt/cray/pe/gcc-native/14/bin/gfortran"
+    ,"fortran.linter.initialize": true
+    ,"fortran.provide.hover": "fortls"
+    ,"fortran.provide.autocomplete": "fortls"
+}

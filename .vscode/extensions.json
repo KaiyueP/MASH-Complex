@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "fortran-lang.linter-gfortran"
+  ],
+  "unwantedRecommendations": [
+    "gimly81.fortran"
+  ]
+}
