@@ -4,18 +4,19 @@ import numpy as np
 # User settings for TC model
 # ============================================================
 # system setup
-complex_mode = False
+complex_mode = True
 nstate_per_qd = 2
 nqd_per_layer = 2
 nlayers = 3 #need to be fixed here
 nmode_per_qd = 10
 N_cavity = 3
 L=40.0*1e-6 #um to m cavity length
-QD_1="3.9nm_4ML" #low energy
-QD_2="3.9nm_3ML" #medium energy	
-QD_3="3.0nm_4ML" #high energy
+QD_1="3.9CdSe_4ML" #low energy
+QD_2="3.9CdSe_3ML" #medium energy	
+QD_3="3.0CdSe_4ML" #high energy
 QD_spacing = 20 *1e-9 #nm to m
 N_QD = nlayers * nqd_per_layer
+g_s_ref_eV=10e-3 #eV to au #coupling strength
 
 # Fundamental constants and unit conversions
 kb=1.380649e-23
@@ -101,7 +102,7 @@ E_cavity = hbar*c*np.sqrt(k_x**2 + k_z**2)*jtoau #j to au
 x_QD=np.arange(nqd_per_layer)*QD_spacing
 d_v = 10e-9 #nm to m, spacing between layers
 z_QD = np.array([L_cavity/2 - d_v, L_cavity/2, L_cavity/2 + d_v ]) #m
-g_s_ref=1e-3*evtoau #eV to au #coupling strength
+g_s_ref=g_s_ref_eV*evtoau #eV to au #coupling strength
 
 
 #reorg in eV
@@ -147,8 +148,8 @@ for layer_idx, (mu_block, z_qd) in enumerate([(mu1, z_QD[0]), (mu2, z_QD[1]), (m
 			for l in range(N_cavity):
 				if complex_mode:
 					g_s = g_s_ref / mu_max * mu_block[j] / np.sqrt(E_cavity[0]) * np.sqrt(E_cavity[l]) * \
-					np.sin(k_z * z_qd) * \
-					np.exp(-1j * k_x[l] * x_qd)
+					np.sin(k_z * z_qd) 
+
 				else:
 					g_s = g_s_ref / mu_max * mu_block[j] / np.sqrt(E_cavity[0]) * np.sqrt(E_cavity[l]) * \
 						np.sin(k_z * z_qd)

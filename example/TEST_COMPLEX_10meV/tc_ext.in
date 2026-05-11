@@ -12,7 +12,7 @@
 # Convergence
 -ntraj 12800
 #Number of time steps per trajectory in au, au = fs * 41.34136
--nt    3000
+-nt   100
 #Time step size in au, au = fs * 41.34136
 -dt    40.0
 #number of thread per mpi

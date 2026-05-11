@@ -1,0 +1,967 @@
+Input arguments:
+Model:  tc
+Units:  au
+Observable type:  pop
+Initial state:  8
+Initial basis:  dia
+Temperature:  300.0
+Reciprocal temperature:  1.0
+Number of bath modes:  1
+Number of time steps:  100
+Time step:  40.0
+Number of trajectories:  12800
+Number of parallel processors:  128
+Diabatic coupling:  1.0
+Energy bias:  0.0
+Reorganization energy:  0
+Cutoff frequency:  0.0
+Disorder:  none
+Bath:  debye
+Polaron transformation:  None
+Wavepacket energy:  0.0
+Wavepacket width:  0.0
+Initial momentum:  0.0
+Nuclear sampling:  classical
+Electronic sampling:  focused
+Debug:  False
+Ead computation:  False
+Complex version:  True
+Seed:  None
+[TC] QD baths are loaded from tc_params_AU.npz; cavity states are phonon-free.
+Using Tavis-Cummings-like Model (TC)
+Generating tc systems of dimensions 15, with bath modes 60
+TC layout: N_QD=6, nstate_per_qd=2, N_cavity=3 (cavity electronic states; cavity phonon coupling must be zero)
+reorganization energy arr:  [[1.43033853e-04 3.03302586e-05 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [3.03302586e-05 7.12678675e-05 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 1.43033853e-04 3.03302586e-05
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 3.03302586e-05 7.12678675e-05
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  1.65509810e-04 2.34202304e-05 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  2.34202304e-05 7.82784171e-05 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 1.65509810e-04 2.34202304e-05
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 2.34202304e-05 7.82784171e-05
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  2.34818983e-04 5.82234960e-05 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  5.82234960e-05 1.11453693e-04 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 2.34818983e-04 5.82234960e-05
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 5.82234960e-05 1.11453693e-04
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]
+ [0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00 0.00000000e+00
+  0.00000000e+00 0.00000000e+00 0.00000000e+00]]
+TC mode partition: shared/mixed=0, qd-local=60
+Using TC complex backend (Hermitian complex Vconst enabled).
+Complex TC mode enabled (complex-only TC) with ns=15
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 1/100
+Attempted : 128/12800
+Success   : 128
+Discarded : 0
+=========================================
+
+[checkpoint] batches 1/100 attempted=128/12800 success=128 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 2/100
+Attempted : 256/12800
+Success   : 256
+Discarded : 0
+=========================================
+
+[checkpoint] batches 2/100 attempted=256/12800 success=256 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 3/100
+Attempted : 384/12800
+Success   : 384
+Discarded : 0
+=========================================
+
+[checkpoint] batches 3/100 attempted=384/12800 success=384 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 4/100
+Attempted : 512/12800
+Success   : 512
+Discarded : 0
+=========================================
+
+[checkpoint] batches 4/100 attempted=512/12800 success=512 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 5/100
+Attempted : 640/12800
+Success   : 640
+Discarded : 0
+=========================================
+
+[checkpoint] batches 5/100 attempted=640/12800 success=640 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 7/100
+Attempted : 896/12800
+Success   : 896
+Discarded : 0
+=========================================
+
+[checkpoint] batches 7/100 attempted=896/12800 success=896 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 8/100
+Attempted : 1024/12800
+Success   : 1024
+Discarded : 0
+=========================================
+
+[checkpoint] batches 8/100 attempted=1024/12800 success=1024 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 9/100
+Attempted : 1152/12800
+Success   : 1152
+Discarded : 0
+=========================================
+
+[checkpoint] batches 9/100 attempted=1152/12800 success=1152 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 10/100
+Attempted : 1280/12800
+Success   : 1280
+Discarded : 0
+=========================================
+
+[checkpoint] batches 10/100 attempted=1280/12800 success=1280 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 11/100
+Attempted : 1408/12800
+Success   : 1408
+Discarded : 0
+=========================================
+
+[checkpoint] batches 11/100 attempted=1408/12800 success=1408 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 12/100
+Attempted : 1536/12800
+Success   : 1536
+Discarded : 0
+=========================================
+
+[checkpoint] batches 12/100 attempted=1536/12800 success=1536 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 13/100
+Attempted : 1664/12800
+Success   : 1664
+Discarded : 0
+=========================================
+
+[checkpoint] batches 13/100 attempted=1664/12800 success=1664 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 15/100
+Attempted : 1920/12800
+Success   : 1920
+Discarded : 0
+=========================================
+
+[checkpoint] batches 15/100 attempted=1920/12800 success=1920 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 16/100
+Attempted : 2048/12800
+Success   : 2048
+Discarded : 0
+=========================================
+
+[checkpoint] batches 16/100 attempted=2048/12800 success=2048 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 17/100
+Attempted : 2176/12800
+Success   : 2176
+Discarded : 0
+=========================================
+
+[checkpoint] batches 17/100 attempted=2176/12800 success=2176 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 19/100
+Attempted : 2432/12800
+Success   : 2432
+Discarded : 0
+=========================================
+
+[checkpoint] batches 19/100 attempted=2432/12800 success=2432 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 20/100
+Attempted : 2560/12800
+Success   : 2560
+Discarded : 0
+=========================================
+
+[checkpoint] batches 20/100 attempted=2560/12800 success=2560 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 22/100
+Attempted : 2816/12800
+Success   : 2816
+Discarded : 0
+=========================================
+
+[checkpoint] batches 22/100 attempted=2816/12800 success=2816 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 23/100
+Attempted : 2944/12800
+Success   : 2944
+Discarded : 0
+=========================================
+
+[checkpoint] batches 23/100 attempted=2944/12800 success=2944 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 25/100
+Attempted : 3200/12800
+Success   : 3200
+Discarded : 0
+=========================================
+
+[checkpoint] batches 25/100 attempted=3200/12800 success=3200 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 26/100
+Attempted : 3328/12800
+Success   : 3328
+Discarded : 0
+=========================================
+
+[checkpoint] batches 26/100 attempted=3328/12800 success=3328 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 27/100
+Attempted : 3456/12800
+Success   : 3456
+Discarded : 0
+=========================================
+
+[checkpoint] batches 27/100 attempted=3456/12800 success=3456 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 29/100
+Attempted : 3712/12800
+Success   : 3712
+Discarded : 0
+=========================================
+
+[checkpoint] batches 29/100 attempted=3712/12800 success=3712 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 30/100
+Attempted : 3840/12800
+Success   : 3840
+Discarded : 0
+=========================================
+
+[checkpoint] batches 30/100 attempted=3840/12800 success=3840 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 31/100
+Attempted : 3968/12800
+Success   : 3968
+Discarded : 0
+=========================================
+
+[checkpoint] batches 31/100 attempted=3968/12800 success=3968 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 32/100
+Attempted : 4096/12800
+Success   : 4096
+Discarded : 0
+=========================================
+
+[checkpoint] batches 32/100 attempted=4096/12800 success=4096 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 33/100
+Attempted : 4224/12800
+Success   : 4224
+Discarded : 0
+=========================================
+
+[checkpoint] batches 33/100 attempted=4224/12800 success=4224 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 34/100
+Attempted : 4352/12800
+Success   : 4352
+Discarded : 0
+=========================================
+
+[checkpoint] batches 34/100 attempted=4352/12800 success=4352 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 35/100
+Attempted : 4480/12800
+Success   : 4480
+Discarded : 0
+=========================================
+
+[checkpoint] batches 35/100 attempted=4480/12800 success=4480 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 37/100
+Attempted : 4736/12800
+Success   : 4736
+Discarded : 0
+=========================================
+
+[checkpoint] batches 37/100 attempted=4736/12800 success=4736 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 38/100
+Attempted : 4864/12800
+Success   : 4864
+Discarded : 0
+=========================================
+
+[checkpoint] batches 38/100 attempted=4864/12800 success=4864 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 39/100
+Attempted : 4992/12800
+Success   : 4992
+Discarded : 0
+=========================================
+
+[checkpoint] batches 39/100 attempted=4992/12800 success=4992 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 40/100
+Attempted : 5120/12800
+Success   : 5120
+Discarded : 0
+=========================================
+
+[checkpoint] batches 40/100 attempted=5120/12800 success=5120 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 41/100
+Attempted : 5248/12800
+Success   : 5248
+Discarded : 0
+=========================================
+
+[checkpoint] batches 41/100 attempted=5248/12800 success=5248 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 43/100
+Attempted : 5504/12800
+Success   : 5504
+Discarded : 0
+=========================================
+
+[checkpoint] batches 43/100 attempted=5504/12800 success=5504 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 44/100
+Attempted : 5632/12800
+Success   : 5632
+Discarded : 0
+=========================================
+
+[checkpoint] batches 44/100 attempted=5632/12800 success=5632 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 45/100
+Attempted : 5760/12800
+Success   : 5760
+Discarded : 0
+=========================================
+
+[checkpoint] batches 45/100 attempted=5760/12800 success=5760 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 46/100
+Attempted : 5888/12800
+Success   : 5888
+Discarded : 0
+=========================================
+
+[checkpoint] batches 46/100 attempted=5888/12800 success=5888 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 47/100
+Attempted : 6016/12800
+Success   : 6016
+Discarded : 0
+=========================================
+
+[checkpoint] batches 47/100 attempted=6016/12800 success=6016 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 49/100
+Attempted : 6272/12800
+Success   : 6272
+Discarded : 0
+=========================================
+
+[checkpoint] batches 49/100 attempted=6272/12800 success=6272 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 50/100
+Attempted : 6400/12800
+Success   : 6400
+Discarded : 0
+=========================================
+
+[checkpoint] batches 50/100 attempted=6400/12800 success=6400 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 51/100
+Attempted : 6528/12800
+Success   : 6528
+Discarded : 0
+=========================================
+
+[checkpoint] batches 51/100 attempted=6528/12800 success=6528 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 52/100
+Attempted : 6656/12800
+Success   : 6656
+Discarded : 0
+=========================================
+
+[checkpoint] batches 52/100 attempted=6656/12800 success=6656 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 53/100
+Attempted : 6784/12800
+Success   : 6784
+Discarded : 0
+=========================================
+
+[checkpoint] batches 53/100 attempted=6784/12800 success=6784 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 54/100
+Attempted : 6912/12800
+Success   : 6912
+Discarded : 0
+=========================================
+
+[checkpoint] batches 54/100 attempted=6912/12800 success=6912 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 56/100
+Attempted : 7168/12800
+Success   : 7168
+Discarded : 0
+=========================================
+
+[checkpoint] batches 56/100 attempted=7168/12800 success=7168 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 57/100
+Attempted : 7296/12800
+Success   : 7296
+Discarded : 0
+=========================================
+
+[checkpoint] batches 57/100 attempted=7296/12800 success=7296 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 58/100
+Attempted : 7424/12800
+Success   : 7424
+Discarded : 0
+=========================================
+
+[checkpoint] batches 58/100 attempted=7424/12800 success=7424 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 59/100
+Attempted : 7552/12800
+Success   : 7552
+Discarded : 0
+=========================================
+
+[checkpoint] batches 59/100 attempted=7552/12800 success=7552 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 60/100
+Attempted : 7680/12800
+Success   : 7680
+Discarded : 0
+=========================================
+
+[checkpoint] batches 60/100 attempted=7680/12800 success=7680 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 61/100
+Attempted : 7808/12800
+Success   : 7808
+Discarded : 0
+=========================================
+
+[checkpoint] batches 61/100 attempted=7808/12800 success=7808 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 62/100
+Attempted : 7936/12800
+Success   : 7936
+Discarded : 0
+=========================================
+
+[checkpoint] batches 62/100 attempted=7936/12800 success=7936 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 63/100
+Attempted : 8064/12800
+Success   : 8064
+Discarded : 0
+=========================================
+
+[checkpoint] batches 63/100 attempted=8064/12800 success=8064 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 64/100
+Attempted : 8192/12800
+Success   : 8192
+Discarded : 0
+=========================================
+
+[checkpoint] batches 64/100 attempted=8192/12800 success=8192 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 65/100
+Attempted : 8320/12800
+Success   : 8320
+Discarded : 0
+=========================================
+
+[checkpoint] batches 65/100 attempted=8320/12800 success=8320 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 66/100
+Attempted : 8448/12800
+Success   : 8448
+Discarded : 0
+=========================================
+
+[checkpoint] batches 66/100 attempted=8448/12800 success=8448 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 67/100
+Attempted : 8576/12800
+Success   : 8576
+Discarded : 0
+=========================================
+
+[checkpoint] batches 67/100 attempted=8576/12800 success=8576 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 68/100
+Attempted : 8704/12800
+Success   : 8704
+Discarded : 0
+=========================================
+
+[checkpoint] batches 68/100 attempted=8704/12800 success=8704 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 69/100
+Attempted : 8832/12800
+Success   : 8832
+Discarded : 0
+=========================================
+
+[checkpoint] batches 69/100 attempted=8832/12800 success=8832 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 70/100
+Attempted : 8960/12800
+Success   : 8960
+Discarded : 0
+=========================================
+
+[checkpoint] batches 70/100 attempted=8960/12800 success=8960 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 72/100
+Attempted : 9216/12800
+Success   : 9216
+Discarded : 0
+=========================================
+
+[checkpoint] batches 72/100 attempted=9216/12800 success=9216 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 73/100
+Attempted : 9344/12800
+Success   : 9344
+Discarded : 0
+=========================================
+
+[checkpoint] batches 73/100 attempted=9344/12800 success=9344 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 74/100
+Attempted : 9472/12800
+Success   : 9472
+Discarded : 0
+=========================================
+
+[checkpoint] batches 74/100 attempted=9472/12800 success=9472 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 75/100
+Attempted : 9600/12800
+Success   : 9600
+Discarded : 0
+=========================================
+
+[checkpoint] batches 75/100 attempted=9600/12800 success=9600 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 76/100
+Attempted : 9728/12800
+Success   : 9728
+Discarded : 0
+=========================================
+
+[checkpoint] batches 76/100 attempted=9728/12800 success=9728 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 77/100
+Attempted : 9856/12800
+Success   : 9856
+Discarded : 0
+=========================================
+
+[checkpoint] batches 77/100 attempted=9856/12800 success=9856 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 78/100
+Attempted : 9984/12800
+Success   : 9984
+Discarded : 0
+=========================================
+
+[checkpoint] batches 78/100 attempted=9984/12800 success=9984 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 79/100
+Attempted : 10112/12800
+Success   : 10112
+Discarded : 0
+=========================================
+
+[checkpoint] batches 79/100 attempted=10112/12800 success=10112 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 80/100
+Attempted : 10240/12800
+Success   : 10240
+Discarded : 0
+=========================================
+
+[checkpoint] batches 80/100 attempted=10240/12800 success=10240 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 81/100
+Attempted : 10368/12800
+Success   : 10368
+Discarded : 0
+=========================================
+
+[checkpoint] batches 81/100 attempted=10368/12800 success=10368 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 82/100
+Attempted : 10496/12800
+Success   : 10496
+Discarded : 0
+=========================================
+
+[checkpoint] batches 82/100 attempted=10496/12800 success=10496 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 83/100
+Attempted : 10624/12800
+Success   : 10624
+Discarded : 0
+=========================================
+
+[checkpoint] batches 83/100 attempted=10624/12800 success=10624 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 85/100
+Attempted : 10880/12800
+Success   : 10880
+Discarded : 0
+=========================================
+
+[checkpoint] batches 85/100 attempted=10880/12800 success=10880 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 86/100
+Attempted : 11008/12800
+Success   : 11008
+Discarded : 0
+=========================================
+
+[checkpoint] batches 86/100 attempted=11008/12800 success=11008 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 87/100
+Attempted : 11136/12800
+Success   : 11136
+Discarded : 0
+=========================================
+
+[checkpoint] batches 87/100 attempted=11136/12800 success=11136 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 88/100
+Attempted : 11264/12800
+Success   : 11264
+Discarded : 0
+=========================================
+
+[checkpoint] batches 88/100 attempted=11264/12800 success=11264 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 89/100
+Attempted : 11392/12800
+Success   : 11392
+Discarded : 0
+=========================================
+
+[checkpoint] batches 89/100 attempted=11392/12800 success=11392 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 90/100
+Attempted : 11520/12800
+Success   : 11520
+Discarded : 0
+=========================================
+
+[checkpoint] batches 90/100 attempted=11520/12800 success=11520 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 91/100
+Attempted : 11648/12800
+Success   : 11648
+Discarded : 0
+=========================================
+
+[checkpoint] batches 91/100 attempted=11648/12800 success=11648 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 92/100
+Attempted : 11776/12800
+Success   : 11776
+Discarded : 0
+=========================================
+
+[checkpoint] batches 92/100 attempted=11776/12800 success=11776 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 93/100
+Attempted : 11904/12800
+Success   : 11904
+Discarded : 0
+=========================================
+
+[checkpoint] batches 93/100 attempted=11904/12800 success=11904 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 94/100
+Attempted : 12032/12800
+Success   : 12032
+Discarded : 0
+=========================================
+
+[checkpoint] batches 94/100 attempted=12032/12800 success=12032 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 95/100
+Attempted : 12160/12800
+Success   : 12160
+Discarded : 0
+=========================================
+
+[checkpoint] batches 95/100 attempted=12160/12800 success=12160 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 97/100
+Attempted : 12416/12800
+Success   : 12416
+Discarded : 0
+=========================================
+
+[checkpoint] batches 97/100 attempted=12416/12800 success=12416 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 98/100
+Attempted : 12544/12800
+Success   : 12544
+Discarded : 0
+=========================================
+
+[checkpoint] batches 98/100 attempted=12544/12800 success=12544 discarded=0
+
+============= Checkpoint saved ==========
+File      : test_complex_ckpt.npz
+Progress  : batches 99/100
+Attempted : 12672/12800
+Success   : 12672
+Discarded : 0
+=========================================
+
+[checkpoint] batches 99/100 attempted=12672/12800 success=12672 discarded=0
+
+================ Timing ================
+MPI ranks             : 1
+Total wall time (max) : 0:03:54.570
+Loop wall time  (max) : 0:03:54.432
+Fortran time   (max)  : 0:03:53.102  (99.4% of loop)
+Requested trajectories: 12800
+Target effective traj : 12800  (npar=128)
+========================================
+
+INFO[tchybrid]: Vconst is numerically real; continuing in complex TC mode.

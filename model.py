@@ -136,7 +136,11 @@ def setup_model(args):
     nf = args.nf
     omega = np.zeros(nf,dtype=np.float64)
     if args.complex_version and model != 'tc':
-        print("Warning: complex_version is currently implemented for model='tc' only. Using real backend for this model.")
+        raise ValueError("complex_version is supported only for model='tc'.")
+
+    if model == 'tc':
+        # TC is complex-only: use Hermitian complex Vconst backend.
+        args.complex_version = True
 
     if model=='spinboson':
         # debye spectral density: J(w) = lmd/2 * wwc/(w^2 + wc^2)
@@ -192,7 +196,7 @@ def setup_model(args):
         print(f"Generating qvc systems of dimensions {ns}, with bath modes {nf}")
     
     elif model == 'tc':
-        Vconst, omega, Vlin, mode_owner, n_qd, nstate_per_qd, n_cavity, ns, nf = setup_tc_model(args.complex_version)
+        Vconst, omega, Vlin, mode_owner, n_qd, nstate_per_qd, n_cavity, ns, nf = setup_tc_model(True)
 
     elif model=='fmo3':
         ns = 3
@@ -406,11 +410,9 @@ def setup_model(args):
     elif model == 'tc':
         # TC hybrid backend uses mode_owner to know whether each mode is
         # shared across many states (owner=0) or local to one QD block (owner=i).
-        if args.complex_version:
-            mashf90.init_tchybrid_complex(mass,omega,np.asarray(Vconst,dtype=np.complex128),Vlin,mode_owner,nf,ns,n_qd,nstate_per_qd,n_cavity)
-            print(f"Complex TC mode enabled: complex Vconst only for TC with ns={ns}")
-        else:
-            mashf90.init_tchybrid(mass,omega,Vconst,Vlin,mode_owner,nf,ns,n_qd,nstate_per_qd,n_cavity)
+        print("Using TC complex backend (Hermitian complex Vconst enabled).")
+        mashf90.init_tchybrid_complex(mass,omega,np.asarray(Vconst,dtype=np.complex128),Vlin,mode_owner,n_qd,nstate_per_qd,n_cavity,nf=nf,ns=ns)
+        print(f"Complex TC mode enabled (complex-only TC) with ns={ns}")
     elif model in ['qvc']:
         mashf90.init_qudvib(mass,omega,Vconst,Vlin,Wqud,nf,ns)
     else:
@@ -589,9 +591,15 @@ def debug(args,mass,omega,nf,ns):
     popa = np.zeros_like(qe)
     Va = np.zeros((nt+1,ns))
     for it in range(nt+1):
-        qa[it],pa[it] = mashf90.dia2ad(q[it],qe[it],pe[it])
+        if getattr(args, "complex_version", False) and args.model == "tc":
+            qa[it],pa[it] = mashf90.dia2ad_complex(q[it],qe[it],pe[it])
+        else:
+            qa[it],pa[it] = mashf90.dia2ad(q[it],qe[it],pe[it])
         popa[it] = qa[it]**2 + pa[it]**2
-        Va[it],U = mashf90.get_vad(q[it],ns)
+        if getattr(args, "complex_version", False) and args.model == "tc":
+            Va[it],U = mashf90.get_vad_complex(q[it],ns)
+        else:
+            Va[it],U = mashf90.get_vad(q[it],ns)
     for n in range(ns):
         label=str(n) 
         plt.plot(t*0.0241888,popa[:,n],'-',color='C%i'%n,alpha=0.5,label=label)
@@ -707,14 +715,28 @@ def sample(args,mass,omega,nf,ns):
         """ Perform basis transformation (if requested) """
         if args.initbasis=='adia':
             """ Convert from adia to dia """
-            vad,U = mashf90.get_vad(q[:,j],ns)
-            qe[:,j] = np.dot(U,qe[:,j])
-            pe[:,j] = np.dot(U,pe[:,j])
+            if getattr(args, "complex_version", False) and args.model == "tc":
+                vad,U = mashf90.get_vad_complex(q[:,j],ns)
+                c_ad = qe[:,j] + 1j*pe[:,j]
+                c_dia = U @ c_ad
+                qe[:,j] = np.real(c_dia)
+                pe[:,j] = np.imag(c_dia)
+            else:
+                vad,U = mashf90.get_vad(q[:,j],ns)
+                qe[:,j] = np.dot(U,qe[:,j])
+                pe[:,j] = np.dot(U,pe[:,j])
         elif args.initbasis=='exc':
             """ Convert from exc to dia: transform given by q=0 """
-            vad,U = mashf90.get_vad(0.*q[:,j],ns)
-            qe[:,j] = np.dot(U,qe[:,j])
-            pe[:,j] = np.dot(U,pe[:,j])
+            if getattr(args, "complex_version", False) and args.model == "tc":
+                vad,U = mashf90.get_vad_complex(0.*q[:,j],ns)
+                c_exc = qe[:,j] + 1j*pe[:,j]
+                c_dia = U @ c_exc
+                qe[:,j] = np.real(c_dia)
+                pe[:,j] = np.imag(c_dia)
+            else:
+                vad,U = mashf90.get_vad(0.*q[:,j],ns)
+                qe[:,j] = np.dot(U,qe[:,j])
+                pe[:,j] = np.dot(U,pe[:,j])
 
     return q,p,qe,pe
 

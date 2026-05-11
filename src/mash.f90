@@ -30,7 +30,7 @@ contains
 ! ============= Potential, Hamiltonian =============
 
    subroutine mash_pot(q, qe, pe, vtot)
-      use pes, only : nf, ns, potad
+      use pes, only : nf, ns, potad, potad_complex, tc_complex_mode
       real(dp), intent(in) :: q(nf), qe(ns), pe(ns)
       real(dp), intent(out) :: vtot
 !
@@ -38,11 +38,21 @@ contains
 !
       integer :: a
       real(dp), allocatable :: U(:,:), Vad(:)
-      allocate(U(ns,ns),Vad(ns))
-      call potad(q,Vad,U)
-      call cstate(qe,pe,U,a)
+      complex(dpc), allocatable :: Uc(:,:)
+      allocate(Vad(ns))
+      if (tc_complex_mode) then
+         allocate(Uc(ns,ns))
+         call potad_complex(q,Vad,Uc)
+         call cstate_c(qe,pe,Uc,a)
+         deallocate(Uc)
+      else
+         allocate(U(ns,ns))
+         call potad(q,Vad,U)
+         call cstate(qe,pe,U,a)
+         deallocate(U)
+      end if
       vtot = Vad(a)
-      deallocate(U,Vad)
+      deallocate(Vad)
    end subroutine
 
 
@@ -57,17 +67,26 @@ contains
    end function
    
    real(dp) function ham_a(q, p, a)
-      use pes, only : ns, mass, potad
+      use pes, only : ns, mass, potad, potad_complex, tc_complex_mode
       real(dp), intent(in) :: q(:), p(:)
       integer :: a
 !
 !     Function to compute Hamiltonian at a phase-space point
 !
       real(dp), allocatable :: U(:,:), Vad(:)
-      allocate(U(ns,ns),Vad(ns))
-      call potad(q,Vad,U)
+      complex(dpc), allocatable :: Uc(:,:)
+      allocate(Vad(ns))
+      if (tc_complex_mode) then
+         allocate(Uc(ns,ns))
+         call potad_complex(q,Vad,Uc)
+         deallocate(Uc)
+      else
+         allocate(U(ns,ns))
+         call potad(q,Vad,U)
+         deallocate(U)
+      end if
       ham_a = Vad(a) + 0.5d0*sum(p**2/mass)
-      deallocate(U,Vad)
+      deallocate(Vad)
    end function
 
 ! =============== Observable-related subroutines =============
@@ -146,6 +165,22 @@ contains
       end do
       end subroutine
 
+   subroutine cstate_c(qe, pe, U, a)
+      use pes, only : ns
+      real(dp), intent(in) :: qe(:), pe(:)
+      complex(dpc), intent(in) :: U(:,:)
+      integer, intent(out) :: a
+      complex(dpc), allocatable :: c(:), ca(:)
+!
+!     Get current adiabatic state for complex adiabatic basis.
+!
+      allocate(c(ns), ca(ns))
+      c = cmplx(qe, pe, kind=dpc)
+      ca = matmul(conjg(transpose(U)), c)
+      call cstate_ad(ca,a)
+      deallocate(c, ca)
+   end subroutine
+
 
       subroutine cstate2_ad(ca, a, b)
          use pes, only : ns
@@ -181,27 +216,36 @@ contains
    end subroutine
 
    subroutine pops_ad_ead(q, qe, pe, pop_ad, ead)
-      use pes, only : ns, potad
+      use pes, only : ns, potad, potad_complex, tc_complex_mode
       real(dp), intent(in)  :: q(:), qe(:), pe(:)
       real(dp), intent(out) :: pop_ad(:)
       real(dp), intent(out) :: ead
 
       real(dp), allocatable :: Vad(:), U(:,:)
-      complex(dpc), allocatable :: c(:)
+      complex(dpc), allocatable :: Uc(:,:), c(:)
 
-      allocate(Vad(ns), U(ns,ns), c(ns))
+      allocate(Vad(ns), c(ns))
 
-      call potad(q, Vad, U)
-      c = dcmplx(matmul(qe, U), matmul(pe, U))   ! diabatic -> adiabatic coeffs
+      if (tc_complex_mode) then
+         allocate(Uc(ns,ns))
+         call potad_complex(q, Vad, Uc)
+         c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         deallocate(Uc)
+      else
+         allocate(U(ns,ns))
+         call potad(q, Vad, U)
+         c = dcmplx(matmul(qe, U), matmul(pe, U))   ! diabatic -> adiabatic coeffs
+         deallocate(U)
+      end if
       call pops_phi(c, pop_ad)                  ! Phi estimator in adiabatic basis
       ead = sum(pop_ad * Vad)                   ! sum_a Phi_a * V_a
 
-      deallocate(Vad, U, c)
+      deallocate(Vad, c)
    end subroutine
 
 
    subroutine pops(q, qe, pe, pop, rep)
-      use pes, only : ns, potad
+      use pes, only : ns, potad, potad_complex, tc_complex_mode
       real(dp), intent(in) :: q(:), qe(:), pe(:)
       real(dp), intent(out) :: pop(:)
       character, intent(in) :: rep ! representation ('d' for diabatic/site, 'e' for exciton, 'a' for adiabatic)
@@ -209,7 +253,7 @@ contains
 !  Observables in diabatic or adiabatic representation
 !
       real(dp), allocatable :: Vad(:), U(:,:)
-      complex(dpc), allocatable :: c(:)
+      complex(dpc), allocatable :: Uc(:,:), c(:)
       if (.not. (rep.eq.'d' .or. rep.eq.'e' .or. rep.eq.'a')) then
          stop 'obsbls: Undefined representation'
       end if
@@ -220,18 +264,36 @@ contains
          call pops_phi(c, pop)
       else if (rep.eq.'e') then
          ! Diabatic (exciton) observables
-         allocate(Vad(ns),U(ns,ns))
-         call potad(q*0.d0,Vad,U)
-         c = dcmplx(matmul(qe,U),matmul(pe,U))
+         allocate(Vad(ns))
+         if (tc_complex_mode) then
+            allocate(Uc(ns,ns))
+            call potad_complex(q*0.d0,Vad,Uc)
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+            deallocate(Uc)
+         else
+            allocate(U(ns,ns))
+            call potad(q*0.d0,Vad,U)
+            c = dcmplx(matmul(qe,U),matmul(pe,U))
+            deallocate(U)
+         end if
          call pops_phi(c, pop)
-         deallocate(Vad,U)
+         deallocate(Vad)
       else if (rep.eq.'a') then
          ! Adiabatic observables
-         allocate(Vad(ns),U(ns,ns))
-         call potad(q,Vad,U)
-         c = dcmplx(matmul(qe,U),matmul(pe,U))
+         allocate(Vad(ns))
+         if (tc_complex_mode) then
+            allocate(Uc(ns,ns))
+            call potad_complex(q,Vad,Uc)
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+            deallocate(Uc)
+         else
+            allocate(U(ns,ns))
+            call potad(q,Vad,U)
+            c = dcmplx(matmul(qe,U),matmul(pe,U))
+            deallocate(U)
+         end if
          call pops_phi(c, pop)
-         deallocate(Vad,U)
+         deallocate(Vad)
       end if
       deallocate(c)
    end subroutine
@@ -239,7 +301,7 @@ contains
 
 ! =============== Dynamics-related subroutines ===============
    subroutine evolve(q, p, qe, pe, Vad, U, dvdq, a, dtbase)
-      use pes, only : nf, ns, grad_a
+      use pes, only : grad_a
       real(dp), intent(inout) :: q(:), p(:), qe(:), pe(:), Vad(:), &
                                  U(:,:), dvdq(:)
       integer, intent(inout) :: a
@@ -339,6 +401,89 @@ contains
       ! deallocate(q0,p0,qe0,pe0,Vad0,U0)
    end subroutine
 
+   subroutine evolve_c(q, p, qe, pe, Vad, U, dvdq, a, dtbase)
+      use pes, only : grad_a_c
+      real(dp), intent(inout) :: q(:), p(:), qe(:), pe(:), Vad(:), dvdq(:)
+      complex(dpc), intent(inout) :: U(:,:)
+      integer, intent(inout) :: a
+      real(dp), intent(in) :: dtbase
+      real(dp) :: q0(size(q)), p0(size(p)), qe0(size(qe)), pe0(size(pe))
+      real(dp) :: Vad0(size(Vad)), dvdq0(size(dvdq))
+      complex(dpc) :: U0(size(U,1), size(U,2))
+      complex(dpc) :: ca0(size(qe)), ca1(size(qe)), ctmp(size(qe))
+      integer :: b
+      logical :: accepted
+!
+!     Perform a time step (complex adiabatic basis)
+!
+      maxhop = 10
+      dt = dtbase
+      do ihop=1,maxhop
+         call savetmp_c(q,p,qe,pe,Vad,U,dvdq,q0,p0,qe0,pe0,Vad0,U0,dvdq0)
+
+         ctmp = cmplx(qe, pe, kind=dpc)
+         ca0 = matmul(conjg(transpose(U)), ctmp)
+
+         call verlet_c(q,p,qe,pe,Vad,U,dvdq,a,dt)
+
+         ctmp = cmplx(qe, pe, kind=dpc)
+         ca1 = matmul(conjg(transpose(U)), ctmp)
+         call cstate_ad(ca1,b)
+
+         if (b.eq.a) then
+            exit
+         else
+            tl = 0.0
+            tr = dt
+            fl = deltaP(ca0,a)
+            fr = deltaP(ca1,a)
+            do iter=1,10
+               tm = (tl+tr)/2
+               call savetmp_c(q0,p0,qe0,pe0,Vad0,U0,dvdq0,q,p,qe,pe,Vad,U,dvdq)
+               call verlet_c(q,p,qe,pe,Vad,U,dvdq,a,tm)
+               ctmp = cmplx(qe, pe, kind=dpc)
+               ca1 = matmul(conjg(transpose(U)), ctmp)
+               fm = deltaP(ca1,a)
+               if (fm.gt.0) then
+                  tl = tm
+               else
+                  tr = tm
+               end if
+            end do
+            call cstate2_ad(ca1,a,b)
+            call cross_c(q, p, ca1, a, b, Vad, U, accepted)
+            if (accepted) then
+               tx = tr
+            else
+               tx = tl
+            end if
+            call savetmp_c(q0,p0,qe0,pe0,Vad0,U0,dvdq0,q,p,qe,pe,Vad,U,dvdq)
+            call verlet_c(q,p,qe,pe,Vad,U,dvdq,a,tx)
+            ctmp = cmplx(qe, pe, kind=dpc)
+            ca1 = matmul(conjg(transpose(U)), ctmp)
+            call cross_c(q, p, ca1, a, b, Vad, U, accepted)
+            if (accepted) then
+               call grad_a_c(q,U,b,dvdq)
+               a = b
+            end if
+            dt = dt - tx
+         end if
+         if (ihop.eq.maxhop) then
+            call verlet_c(q,p,qe,pe,Vad,U,dvdq,a,dt)
+            ctmp = cmplx(qe, pe, kind=dpc)
+            ca1 = matmul(conjg(transpose(U)), ctmp)
+            call cstate_ad(ca1,b)
+            if (b.ne.a) then
+               call cross_c(q, p, ca1, a, b, Vad, U, accepted)
+               if (accepted) then
+                  call grad_a_c(q,U,b,dvdq)
+                  a = b
+               end if
+            end if
+         end if
+      end do
+   end subroutine
+
    real(dp) function deltaP(ca,a)
       complex(dpc) :: ca(:)
       integer :: a,b
@@ -366,6 +511,25 @@ contains
       call grad_a(q,U,a,dvdq)
       call step_p(p,dvdq,dt2)
       call step_e(qe,pe,Vad,U,dt2)
+   end subroutine
+
+   subroutine verlet_c(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      use pes, only : potad_complex, grad_a_c
+      real(dp), intent(inout) :: q(:), p(:), qe(:), pe(:), Vad(:), dvdq(:)
+      complex(dpc), intent(inout) :: U(:,:)
+      integer, intent(in) :: a
+      real(dp), intent(in) :: dt
+!
+!     Perform a time step on state a (complex adiabatic basis)
+!
+      dt2 = dt/2
+      call step_e_c(qe,pe,Vad,U,dt2)
+      call step_p(p,dvdq,dt2)
+      call step_q(q,p,dt)
+      call potad_complex(q, Vad, U)
+      call grad_a_c(q,U,a,dvdq)
+      call step_p(p,dvdq,dt2)
+      call step_e_c(qe,pe,Vad,U,dt2)
    end subroutine
 
    subroutine step_p(p,dvdq,dt)
@@ -405,8 +569,7 @@ contains
    end subroutine
 
    subroutine step_e(qe, pe, Vad, U, dt)
-      use pes, only : ns
-      use maths, only : iu, symevp
+      use maths, only : iu
       real(dp), intent(inout) :: qe(:), pe(:)
       real(dp), intent(in) :: Vad(:), U(:,:)
       real(dp), intent(in) :: dt
@@ -426,9 +589,27 @@ contains
       ! deallocate(c)
    end subroutine
 
+   subroutine step_e_c(qe, pe, Vad, U, dt)
+      use maths, only : iu
+      real(dp), intent(inout) :: qe(:), pe(:)
+      real(dp), intent(in) :: Vad(:)
+      complex(dpc), intent(in) :: U(:,:)
+      real(dp), intent(in) :: dt
+      complex(dpc) :: c(size(qe)), ca(size(qe))
+!
+!     Evolve electronic coefficients with complex adiabatic basis.
+!
+      c = cmplx(qe, pe, kind=dpc)
+      ca = matmul(conjg(transpose(U)), c)
+      ca = exp(- iu * dt * Vad) * ca
+      c = matmul(U, ca)
+      qe = real(c)
+      pe = aimag(c)
+   end subroutine
+
 
    subroutine cross(q,p,cad,n,m,Vad,U,accepted)
-      use pes, only : nf, ns, mass, nacdir
+      use pes, only : nf, mass, nacdir
       real(dp), intent(inout) :: p(:)
       complex(dpc), intent(inout) :: cad(:)
       real(dp), intent(in) :: q(:), Vad(:), U(:,:)
@@ -470,11 +651,60 @@ contains
       deallocate(dj,pnac,porth)
    end subroutine
 
+   subroutine cross_c(q,p,cad,n,m,Vad,U,accepted)
+      use pes, only : nf, mass, nacdir_complex
+      real(dp), intent(inout) :: p(:)
+      complex(dpc), intent(inout) :: cad(:)
+      real(dp), intent(in) :: q(:), Vad(:)
+      complex(dpc), intent(in) :: U(:,:)
+      logical, intent(out) :: accepted
+      real(dp), allocatable :: dj(:), pnac(:), porth(:)
+      allocate(dj(nf),pnac(nf),porth(nf))
+      call nacdir_complex(q,cad,Vad,U,n,m,dj)
+      dj = dj/sqrt(mass)
+
+      p = p/sqrt(mass)
+      if (nf.eq.1) then
+         pnac = p
+      else
+         pnac = dot_product(p,dj)/dot_product(dj,dj)*dj
+      end if
+      porth = p - pnac
+      Ekin = 0.5d0*sum(pnac**2)
+      Vdiff = Vad(m)-Vad(n)
+      if ((Ekin-Vdiff).gt.0.d0) then
+         pnac = sqrt(2.d0*(Ekin-Vdiff)) * pnac/sqrt(dot_product(pnac,pnac))
+         accepted = .true.
+      else
+         pnac = -pnac
+         accepted = .false.
+      end if
+      p = porth + pnac
+      p = p*sqrt(mass)
+      deallocate(dj,pnac,porth)
+   end subroutine
+
    subroutine savetmp(q,p,qe,pe,Vad,U,dvdq,q0,p0,qe0,pe0,Vad0,U0,dvdq0)
       real(dp), intent(inout) :: q(:),p(:),qe(:),pe(:),Vad(:),U(:,:),dvdq(:),&
             q0(:),p0(:),qe0(:),pe0(:), Vad0(:),U0(:,:),dvdq0(:)   
 !
 !     Store temporary variables and potential information
+!
+      q0 = q
+      p0 = p
+      qe0 = qe
+      pe0 = pe
+      Vad0 = Vad
+      U0 = U
+      dvdq0 = dvdq
+   end subroutine
+
+   subroutine savetmp_c(q,p,qe,pe,Vad,U,dvdq,q0,p0,qe0,pe0,Vad0,U0,dvdq0)
+      real(dp), intent(inout) :: q(:),p(:),qe(:),pe(:),Vad(:),dvdq(:), &
+            q0(:),p0(:),qe0(:),pe0(:), Vad0(:),dvdq0(:)
+      complex(dpc), intent(inout) :: U(:,:), U0(:,:)
+!
+!     Store temporary variables and potential information (complex U)
 !
       q0 = q
       p0 = p

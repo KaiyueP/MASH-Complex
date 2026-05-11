@@ -39,15 +39,63 @@ end subroutine
 
 subroutine init_tchybrid(mass,omega,Vconst,Vlin,mode_owner,nf,ns,n_qd,nstate_per_qd,n_cavity)
    use types
-   use tchybrid, only : init
+   use tchybrid, only : init_complex
+   use pes, only : pesinit=>init, pot, potc, grad, grad_a, grad_a_c
+   use pes, only : pes_get_vconst=>get_vconst, pes_get_vlin=>get_vlin
+   use pes, only : tc_complex_mode
+   use tchybrid, only : tc_pot=>pot_real, tc_potc=>pot_complex, tc_grad=>grad_real
+   use tchybrid, only : tc_grad_a=>grad_a_tchybrid, tc_grad_a_c=>grad_a_tchybrid_complex
+   use tchybrid, only : tc_get_vconst=>get_vconst, tc_get_vlin=>get_vlin
    integer, intent(in) :: nf, ns, n_qd, nstate_per_qd, n_cavity
    integer, intent(in) :: mode_owner(nf)
    real(dp), intent(in) :: mass(nf), omega(nf)
    real(dp), intent(in) :: Vconst(ns,ns), Vlin(nf,ns,ns)
+   complex(dpc), allocatable :: Vconst_c(:,:)
 !
-!  Initialize TC hybrid potential (shared + QD-local modes)
+!  Initialize TC hybrid potential; real input is promoted to complex.
 !
-   call init(nf,ns,mass,omega,Vconst,Vlin,mode_owner,n_qd,nstate_per_qd,n_cavity)
+   call pesinit(nf,ns,mass)
+   pot => tc_pot
+   potc => tc_potc
+   grad => tc_grad
+   pes_get_vconst => tc_get_vconst
+   pes_get_vlin => tc_get_vlin
+   grad_a => tc_grad_a
+   grad_a_c => tc_grad_a_c
+   tc_complex_mode = .true.
+   allocate(Vconst_c(ns,ns))
+   Vconst_c = cmplx(Vconst, 0.d0, kind=dpc)
+   call init_complex(nf,ns,mass,omega,Vconst_c,Vlin,mode_owner,n_qd,nstate_per_qd,n_cavity)
+   deallocate(Vconst_c)
+end subroutine
+
+subroutine init_tchybrid_complex(mass,omega,Vconst,Vlin,mode_owner,nf,ns,n_qd,nstate_per_qd,n_cavity)
+   use types
+   use tchybrid, only : init_complex
+   use pes, only : pesinit=>init, pot, potc, grad, grad_a, grad_a_c
+   use pes, only : pes_get_vconst=>get_vconst, pes_get_vlin=>get_vlin
+   use pes, only : tc_complex_mode
+   use tchybrid, only : tc_pot=>pot_real, tc_potc=>pot_complex, tc_grad=>grad_real
+   use tchybrid, only : tc_grad_a=>grad_a_tchybrid, tc_grad_a_c=>grad_a_tchybrid_complex
+   use tchybrid, only : tc_get_vconst=>get_vconst, tc_get_vlin=>get_vlin
+   integer, intent(in) :: nf, ns, n_qd, nstate_per_qd, n_cavity
+   integer, intent(in) :: mode_owner(nf)
+   real(dp), intent(in) :: mass(nf), omega(nf)
+   complex(dpc), intent(in) :: Vconst(ns,ns)
+   real(dp), intent(in) :: Vlin(nf,ns,ns)
+!
+!  Initialize TC hybrid potential with complex Hermitian Vconst.
+!
+   call pesinit(nf,ns,mass)
+   pot => tc_pot
+   potc => tc_potc
+   grad => tc_grad
+   pes_get_vconst => tc_get_vconst
+   pes_get_vlin => tc_get_vlin
+   grad_a => tc_grad_a
+   grad_a_c => tc_grad_a_c
+   tc_complex_mode = .true.
+   call init_complex(nf,ns,mass,omega,Vconst,Vlin,mode_owner,n_qd,nstate_per_qd,n_cavity)
 end subroutine
 
 subroutine init_tully(model,mass)
@@ -77,26 +125,62 @@ end subroutine
 
 subroutine get_vad(q,nf,ns,Vad,U)
    use types
-   use pes, only : potad
+   use pes, only : potad, tc_complex_mode
    integer, intent(in) :: nf,ns
    real(dp), intent(in) :: q(nf)
    real(dp), intent(out) :: Vad(ns), U(ns,ns)
 !
 !  Wrapper for adiabatic potential
 !
+   if (tc_complex_mode) then
+      error stop 'get_vad (real-U wrapper) is not available in complex TC mode; use get_vad_complex'
+   end if
    call potad(q,Vad,U)
+end subroutine
+
+subroutine get_vad_complex(q,nf,ns,Vad,U)
+   use types
+   use pes, only : potad_complex
+   integer, intent(in) :: nf,ns
+   real(dp), intent(in) :: q(nf)
+   real(dp), intent(out) :: Vad(ns)
+   complex(dpc), intent(out) :: U(ns,ns)
+!
+!  Wrapper for adiabatic potential (complex adiabatic basis)
+!
+   call potad_complex(q,Vad,U)
 end subroutine
 
 subroutine pot_mat(q,nf_,ns_,V,dVdq)
    use types
-   use pes, only : pot, grad
+   use pes, only : pot, grad, tc_complex_mode
    integer, intent(in)  :: nf_,ns_
    real(dp), intent(in) :: q(nf_)
    real(dp), intent(out):: v(ns_,ns_), dVdq(nf_,ns_,ns_)
 !
 !  Wrapper for diabatic potential matrix
 !
+   if (tc_complex_mode) then
+      error stop 'pot_mat (real potential wrapper) is not available in complex TC mode; use pot_mat_complex'
+   end if
    call pot(q,v)
+   call grad(q,dVdq)
+end subroutine
+
+subroutine pot_mat_complex(q,nf_,ns_,V,dVdq)
+   use types
+   use pes, only : potc, grad, tc_complex_mode
+   integer, intent(in)  :: nf_,ns_
+   real(dp), intent(in) :: q(nf_)
+   complex(dpc), intent(out):: v(ns_,ns_)
+   real(dp), intent(out):: dVdq(nf_,ns_,ns_)
+!
+!  Wrapper for complex-Hermitian diabatic potential matrix.
+!
+   if (.not. tc_complex_mode) then
+      error stop 'pot_mat_complex is available only after complex TC initialization'
+   end if
+   call potc(q,v)
    call grad(q,dVdq)
 end subroutine
 
@@ -114,8 +198,8 @@ end subroutine
 
 subroutine mashgrad(q,qe,pe,nf_,ns,dvdq)
    use types
-   use pes, only : potad, grad_a
-   use mash, only : cstate
+   use pes, only : potad, potad_complex, grad_a, grad_a_c, tc_complex_mode
+   use mash, only : cstate, cstate_c
    integer, intent(in) :: nf_, ns
    real(dp), intent(in) :: q(nf_), qe(ns), pe(ns)
    real(dp), intent(out) :: dvdq(nf_)
@@ -123,33 +207,54 @@ subroutine mashgrad(q,qe,pe,nf_,ns,dvdq)
 !  Wrapper for gradient
 !
    real(dp), allocatable :: Vad(:), U(:,:)
+   complex(dpc), allocatable :: Uc(:,:)
    integer :: a
-   allocate(Vad(ns),U(ns,ns))
-   call potad(q, Vad, U)
-   call cstate(qe,pe,U,a)
-   call grad_a(q, U, a, dvdq)
-   deallocate(Vad, U)
+   allocate(Vad(ns))
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q, Vad, Uc)
+      call cstate_c(qe,pe,Uc,a)
+      call grad_a_c(q, Uc, a, dvdq)
+      deallocate(Uc)
+   else
+      allocate(U(ns,ns))
+      call potad(q, Vad, U)
+      call cstate(qe,pe,U,a)
+      call grad_a(q, U, a, dvdq)
+      deallocate(U)
+   end if
+   deallocate(Vad)
 end subroutine
 
 subroutine nac(q,d,nf,ns)
    use types
-   use pes, only : potad, mynac => nac
+   use pes, only : potad, potad_complex, mynac => nac, mynac_c => nac_complex, tc_complex_mode
    integer, intent(in) :: nf, ns
    real(dp), intent(in) :: q(nf)
    real(dp), intent(out) :: d(nf,ns,ns)
+   real(dp), allocatable :: Vad(:), U(:,:)
+   complex(dpc), allocatable :: Uc(:,:)
 !
 !   Wrapper for nonadiabatic coupling vector
 !
-   real(dp), allocatable :: Vad(:), U(:,:)
-   allocate(Vad(ns),U(ns,ns))
-   call potad(q,Vad,U)
-   call mynac(q,Vad,U,d)
-   deallocate(Vad,U)
+   allocate(Vad(ns))
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q,Vad,Uc)
+      call mynac_c(q,Vad,Uc,d)
+      deallocate(Uc)
+   else
+      allocate(U(ns,ns))
+      call potad(q,Vad,U)
+      call mynac(q,Vad,U,d)
+      deallocate(U)
+   end if
+   deallocate(Vad)
 end subroutine
 
 subroutine mashnacdir(q,cad,Vad,U,n,m,d,nf,ns)
    use types
-   use pes, only : nacdir
+   use pes, only : nacdir, tc_complex_mode
    integer, intent(in) :: nf, ns
    real(dp), intent(in) :: q(nf), Vad(ns), U(ns,ns)
    complex(dpc), intent(in) :: cad(ns)
@@ -158,19 +263,25 @@ subroutine mashnacdir(q,cad,Vad,U,n,m,d,nf,ns)
 !
 !   Wrapper for direction of momentum rescaling/reversal
 !
+   if (tc_complex_mode) then
+      error stop 'mashnacdir (real-U wrapper) is not available in complex TC mode'
+   end if
    call nacdir(q,cad,Vad,U,n,m,d)
 end subroutine
 
 subroutine dia2ad(q,qe,pe,qa,pa,nf,ns)
    use types
-   use pes, only : potad
+   use pes, only : potad, tc_complex_mode
    real(dp), intent(in) :: q(nf), qe(ns), pe(ns)
    real(dp), intent(out) :: qa(ns), pa(ns)
    integer, intent(in) :: nf, ns
+   real(dp), allocatable :: Vad(:), U(:,:), eye(:,:)
 !
 !  Convert diabatic amplitudes to adiabatic
 !
-   real(dp), allocatable :: Vad(:), U(:,:), eye(:,:)
+   if (tc_complex_mode) then
+      error stop 'dia2ad (real-U wrapper) is not available in complex TC mode; use dia2ad_complex'
+   end if
    allocate(Vad(ns),U(ns,ns),eye(ns,ns))
    call potad(q,Vad,U)
    eye = 0.d0
@@ -185,6 +296,26 @@ subroutine dia2ad(q,qe,pe,qa,pa,nf,ns)
    qa(:) = matmul(qe, U)
    pa(:) = matmul(pe, U)
    deallocate(Vad,U,eye)
+end subroutine
+
+subroutine dia2ad_complex(q,qe,pe,qa,pa,nf,ns)
+   use types
+   use pes, only : potad_complex
+   real(dp), intent(in) :: q(nf), qe(ns), pe(ns)
+   real(dp), intent(out) :: qa(ns), pa(ns)
+   integer, intent(in) :: nf, ns
+   real(dp), allocatable :: Vad(:)
+   complex(dpc), allocatable :: U(:,:), c(:), ca(:)
+!
+!  Convert diabatic amplitudes to adiabatic for complex adiabatic basis.
+!
+   allocate(Vad(ns),U(ns,ns),c(ns),ca(ns))
+   call potad_complex(q,Vad,U)
+   c = cmplx(qe, pe, kind=dpc)
+   ca = matmul(conjg(transpose(U)), c)
+   qa = real(ca)
+   pa = aimag(ca)
+   deallocate(Vad,U,c,ca)
 end subroutine
 
 subroutine mash_pops(q, qe, pe, pop, rep, nf, ns)
@@ -205,8 +336,8 @@ end subroutine
 subroutine runtrj(q, p, qe, pe, qt, pt, qet, pet, at, Et, &
    dt, ierr, nt, nf_, ns)
    use types
-   use pes, only : potad, grad_a, mass
-   use mash, only : store, evolve, cstate
+   use pes, only : potad, potad_complex, grad_a, grad_a_c, mass, tc_complex_mode
+   use mash, only : store, evolve, evolve_c, cstate, cstate_c
    integer :: nt, nf_, ns
    real(dp), intent(in) :: dt
    real(dp), intent(inout) :: q(nf_), p(nf_), qe(ns), pe(ns)
@@ -217,14 +348,21 @@ subroutine runtrj(q, p, qe, pe, qt, pt, qet, pet, at, Et, &
 !  Run a trajectory
 !
    real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
+   complex(dpc), allocatable :: Uc(:,:)
    integer :: a , atmp
 
-   allocate(Vad(ns),U(ns,ns),dvdq(nf_))
-
-   call potad(q,Vad,U)
-   call cstate(qe,pe,U,a)
-
-   call grad_a(q,U,a,dvdq)
+   allocate(Vad(ns),dvdq(nf_))
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q,Vad,Uc)
+      call cstate_c(qe,pe,Uc,a)
+      call grad_a_c(q,Uc,a,dvdq)
+   else
+      allocate(U(ns,ns))
+      call potad(q,Vad,U)
+      call cstate(qe,pe,U,a)
+      call grad_a(q,U,a,dvdq)
+   end if
    ierr = 0
    do it = 1, nt
       call store(q, p, qe, pe, a, it, qt, pt, qet, pet, at)
@@ -235,7 +373,11 @@ subroutine runtrj(q, p, qe, pe, qt, pt, qet, pet, at, Et, &
 
       atmp = a
 
-      call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      if (tc_complex_mode) then
+         call evolve_c(q, p, qe, pe, Vad, Uc, dvdq, a, dt)
+      else
+         call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      end if
 
       if (ierr.gt.0) exit ! Don't waste time if trajectory will be discarded
 
@@ -251,14 +393,16 @@ subroutine runtrj(q, p, qe, pe, qt, pt, qet, pet, at, Et, &
       Et(nt+1) = Vad(a) + 0.5d0*sum(p**2/mass) ! ham_a(q,p,a)
    end if
 
-   deallocate(Vad,U,dvdq)
+   if (allocated(U)) deallocate(U)
+   if (allocated(Uc)) deallocate(Uc)
+   deallocate(Vad,dvdq)
 end subroutine
 
 
 subroutine runtrj_obs(q, p, qe, pe, bt, Et, rep, dt, ierr, nt, nf_, ns)
    use types
-   use pes,  only : potad, grad_a, mass
-   use mash, only : evolve, cstate, pops_phi
+   use pes,  only : potad, potad_complex, grad_a, grad_a_c, mass, tc_complex_mode
+   use mash, only : evolve, evolve_c, cstate, cstate_c, pops_phi
    integer, intent(in) :: nt, nf_, ns
    real(dp), intent(in) :: dt
    character, intent(in) :: rep
@@ -268,25 +412,40 @@ subroutine runtrj_obs(q, p, qe, pe, bt, Et, rep, dt, ierr, nt, nf_, ns)
 
    real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
    real(dp), allocatable :: U0(:,:), Vad0(:), q0(:)
+   complex(dpc), allocatable :: Uc(:,:), U0c(:,:)
    complex(dpc), allocatable :: c(:)
    integer :: it, a
 
    ierr = 0
 
-   allocate(Vad(ns), U(ns,ns), dvdq(nf_), c(ns))
+   allocate(Vad(ns), dvdq(nf_), c(ns))
 
    ! If "exciton basis" output is requested (rep='e'),
    ! original code uses potad(q*0) every time; we cache U0 once.
    if (rep.eq.'e') then
-      allocate(U0(ns,ns), Vad0(ns), q0(nf_))
+      allocate(Vad0(ns), q0(nf_))
       q0 = 0.d0
-      call potad(q0, Vad0, U0)
+      if (tc_complex_mode) then
+         allocate(U0c(ns,ns))
+         call potad_complex(q0, Vad0, U0c)
+      else
+         allocate(U0(ns,ns))
+         call potad(q0, Vad0, U0)
+      end if
       deallocate(Vad0, q0)
    end if
 
-   call potad(q, Vad, U)
-   call cstate(qe, pe, U, a)
-   call grad_a(q, U, a, dvdq)
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q, Vad, Uc)
+      call cstate_c(qe, pe, Uc, a)
+      call grad_a_c(q, Uc, a, dvdq)
+   else
+      allocate(U(ns,ns))
+      call potad(q, Vad, U)
+      call cstate(qe, pe, U, a)
+      call grad_a(q, U, a, dvdq)
+   end if
 
    do it = 1, nt
       ! ---- populations at current time (matches original timing: before evolve) ----
@@ -294,17 +453,29 @@ subroutine runtrj_obs(q, p, qe, pe, bt, Et, rep, dt, ierr, nt, nf_, ns)
          c = dcmplx(qe, pe)
          call pops_phi(c, bt(it,:))
       else if (rep.eq.'a') then
-         c = dcmplx(matmul(qe, U), matmul(pe, U))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
          call pops_phi(c, bt(it,:))
       else if (rep.eq.'e') then
-         c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
          call pops_phi(c, bt(it,:))
       end if
 
       ! ---- energy on active surface (no extra potad) ----
       Et(it) = Vad(a) + 0.5d0*sum(p**2/mass)
 
-      call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      if (tc_complex_mode) then
+         call evolve_c(q, p, qe, pe, Vad, Uc, dvdq, a, dt)
+      else
+         call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      end if
 
       if (q(1).ne.q(1)) then
          ierr = 1
@@ -318,10 +489,18 @@ subroutine runtrj_obs(q, p, qe, pe, bt, Et, rep, dt, ierr, nt, nf_, ns)
          c = dcmplx(qe, pe)
          call pops_phi(c, bt(nt+1,:))
       else if (rep.eq.'a') then
-         c = dcmplx(matmul(qe, U), matmul(pe, U))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
          call pops_phi(c, bt(nt+1,:))
       else if (rep.eq.'e') then
-         c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
          call pops_phi(c, bt(nt+1,:))
       end if
       Et(nt+1) = Vad(a) + 0.5d0*sum(p**2/mass)
@@ -331,15 +510,18 @@ subroutine runtrj_obs(q, p, qe, pe, bt, Et, rep, dt, ierr, nt, nf_, ns)
       Et(it:nt+1)   = 0.d0
    end if
 
-   if (rep.eq.'e') deallocate(U0)
-   deallocate(Vad, U, dvdq, c)
+   if (allocated(U0)) deallocate(U0)
+   if (allocated(U0c)) deallocate(U0c)
+   if (allocated(U)) deallocate(U)
+   if (allocated(Uc)) deallocate(Uc)
+   deallocate(Vad, dvdq, c)
 end subroutine
 
 
 subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_, ns)
    use types
-   use pes,  only : potad, grad_a, mass, omega
-   use mash, only : evolve, cstate, pops_phi
+   use pes,  only : potad, potad_complex, grad_a, grad_a_c, mass, omega, tc_complex_mode
+   use mash, only : evolve, evolve_c, cstate, cstate_c, pops_phi
    integer, intent(in) :: nt, nf_, ns
    real(dp), intent(in) :: dt
    character, intent(in) :: rep
@@ -349,24 +531,39 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
 
    real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
    real(dp), allocatable :: U0(:,:), Vad0(:), q0(:)
+   complex(dpc), allocatable :: Uc(:,:), U0c(:,:)
    complex(dpc), allocatable :: c(:)
    real(dp), allocatable :: pop_ad(:)
    integer :: it, a
 
    ierr = 0
 
-   allocate(Vad(ns), U(ns,ns), dvdq(nf_), c(ns), pop_ad(ns))
+   allocate(Vad(ns), dvdq(nf_), c(ns), pop_ad(ns))
 
    if (rep.eq.'e') then
-      allocate(U0(ns,ns), Vad0(ns), q0(nf_))
+      allocate(Vad0(ns), q0(nf_))
       q0 = 0.d0
-      call potad(q0, Vad0, U0)
+      if (tc_complex_mode) then
+         allocate(U0c(ns,ns))
+         call potad_complex(q0, Vad0, U0c)
+      else
+         allocate(U0(ns,ns))
+         call potad(q0, Vad0, U0)
+      end if
       deallocate(Vad0, q0)
    end if
 
-   call potad(q, Vad, U)
-   call cstate(qe, pe, U, a)
-   call grad_a(q, U, a, dvdq)
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q, Vad, Uc)
+      call cstate_c(qe, pe, Uc, a)
+      call grad_a_c(q, Uc, a, dvdq)
+   else
+      allocate(U(ns,ns))
+      call potad(q, Vad, U)
+      call cstate(qe, pe, U, a)
+      call grad_a(q, U, a, dvdq)
+   end if
 
    do it = 1, nt
       ! ---- bt in requested representation ----
@@ -374,10 +571,18 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
          c = dcmplx(qe, pe)
          call pops_phi(c, bt(it,:))
       else if (rep.eq.'a') then
-         c = dcmplx(matmul(qe, U), matmul(pe, U))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
          call pops_phi(c, bt(it,:))
       else if (rep.eq.'e') then
-         c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
          call pops_phi(c, bt(it,:))
       end if
 
@@ -385,7 +590,11 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
       Et(it) = Vad(a) + 0.5d0*sum(p**2/mass)
 
       ! ---- Ead = sum_a Phi_a * Vad(a) in adiabatic basis ----
-      c = dcmplx(matmul(qe, U), matmul(pe, U))
+      if (tc_complex_mode) then
+         c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+      else
+         c = dcmplx(matmul(qe, U), matmul(pe, U))
+      end if
       call pops_phi(c, pop_ad)
       Ead(it) = sum(pop_ad * Vad)
 
@@ -396,7 +605,11 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
          V0t(it) = 0.d0
       end if
 
-      call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      if (tc_complex_mode) then
+         call evolve_c(q, p, qe, pe, Vad, Uc, dvdq, a, dt)
+      else
+         call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      end if
 
       if (q(1).ne.q(1)) then
          ierr = 1
@@ -410,16 +623,28 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
          c = dcmplx(qe, pe)
          call pops_phi(c, bt(nt+1,:))
       else if (rep.eq.'a') then
-         c = dcmplx(matmul(qe, U), matmul(pe, U))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
          call pops_phi(c, bt(nt+1,:))
       else if (rep.eq.'e') then
-         c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
          call pops_phi(c, bt(nt+1,:))
       end if
 
       Et(nt+1) = Vad(a) + 0.5d0*sum(p**2/mass)
 
-      c = dcmplx(matmul(qe, U), matmul(pe, U))
+      if (tc_complex_mode) then
+         c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+      else
+         c = dcmplx(matmul(qe, U), matmul(pe, U))
+      end if
       call pops_phi(c, pop_ad)
       Ead(nt+1) = sum(pop_ad * Vad)
 
@@ -435,8 +660,11 @@ subroutine runtrj_obs_ead(q, p, qe, pe, bt, Et, Ead, V0t, rep, dt, ierr, nt, nf_
       V0t(it:nt+1)   = 0.d0
    end if
 
-   if (rep.eq.'e') deallocate(U0)
-   deallocate(Vad, U, dvdq, c, pop_ad)
+   if (allocated(U0)) deallocate(U0)
+   if (allocated(U0c)) deallocate(U0c)
+   if (allocated(U)) deallocate(U)
+   if (allocated(Uc)) deallocate(Uc)
+   deallocate(Vad, dvdq, c, pop_ad)
 end subroutine
 
 

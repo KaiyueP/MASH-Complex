@@ -16,11 +16,13 @@ module tchybrid
    use types
 
    real(dp), allocatable :: Vconst(:,:), Vlin(:,:,:)
+   complex(dpc), allocatable :: Vconst_c(:,:)
    integer, allocatable :: mode_owner(:)
    ! Cached active electronic-state range for each phonon mode.
    ! These bounds are computed once during init and reused in the hot loops.
    integer, allocatable :: mode_s0(:), mode_s1(:)
    integer :: n_qd = 0, nstate_per_qd = 0, n_cavity = 0
+   logical :: use_complex_vconst = .false.
 
 contains
 
@@ -31,9 +33,7 @@ contains
    ! - precompute per-mode state-window cache (mode_s0/mode_s1)
    ! - register procedure pointers used by the `pes` driver (pot, grad, grad_a)
    subroutine init(nf_,ns_,mass_,omega_,Vconst_,Vlin_,mode_owner_,n_qd_,nstate_per_qd_,n_cavity_)
-      use pes, only : pesinit=>init, potptr=>pot, gradptr=>grad, nf, ns, omega, cayley
-      use pes, only : pes_get_vconst=>get_vconst, pes_get_vlin=>get_vlin
-      use pes, only : grad_a
+      complex(dpc), allocatable :: Vconst_c_(:,:)
       integer, intent(in) :: nf_, ns_
       integer, intent(in) :: mode_owner_(nf_), n_qd_, nstate_per_qd_, n_cavity_
       real(dp), intent(in) :: mass_(nf_), omega_(nf_)
@@ -44,23 +44,43 @@ contains
       ! n_cavity_: number of cavity states appended after QD blocks
       ! mode_owner_: owner map for each phonon mode (0 shared, k>0 local to QD k)
 
-      call pesinit(nf_,ns_,mass_)
-      potptr => pot
-      gradptr => grad
-      pes_get_vconst => get_vconst
-      pes_get_vlin => get_vlin
-      grad_a => grad_a_tchybrid
+      allocate(Vconst_c_(ns_,ns_))
+      Vconst_c_ = cmplx(Vconst_, 0.d0, kind=dpc)
+      call init_complex(nf_,ns_,mass_,omega_,Vconst_c_,Vlin_,mode_owner_,n_qd_,nstate_per_qd_,n_cavity_)
+      deallocate(Vconst_c_)
+   end subroutine
+
+   subroutine init_complex(nf_,ns_,mass_,omega_,Vconst_c_,Vlin_,mode_owner_,n_qd_,nstate_per_qd_,n_cavity_)
+      use pes, only : nf, ns, omega, cayley, tc_complex_mode
+      integer, intent(in) :: nf_, ns_
+      integer, intent(in) :: mode_owner_(nf_), n_qd_, nstate_per_qd_, n_cavity_
+      integer :: i
+      real(dp) :: imag_max
+      real(dp), intent(in) :: mass_(nf_), omega_(nf_)
+      complex(dpc), intent(in) :: Vconst_c_(ns_,ns_)
+      real(dp), intent(in) :: Vlin_(nf_,ns_,ns_)
+
+      if (size(mass_) /= nf_) then
+         error stop 'mass array has inconsistent length in tchybrid init_complex'
+      end if
+      if (nf /= nf_ .or. ns /= ns_) then
+         error stop 'pes module not initialized consistently before tchybrid init_complex'
+      end if
+      tc_complex_mode = .true.
+      use_complex_vconst = .true.
 
       if (allocated(omega)) deallocate(omega)
       if (allocated(Vconst)) deallocate(Vconst)
       if (allocated(Vlin)) deallocate(Vlin)
+      if (allocated(Vconst_c)) deallocate(Vconst_c)
       if (allocated(mode_owner)) deallocate(mode_owner)
       if (allocated(mode_s0)) deallocate(mode_s0)
       if (allocated(mode_s1)) deallocate(mode_s1)
 
-      allocate(omega(nf), Vconst(ns,ns), Vlin(nf,ns,ns), mode_owner(nf), mode_s0(nf), mode_s1(nf))
+      allocate(omega(nf), Vconst(ns,ns), Vconst_c(ns,ns), Vlin(nf,ns,ns), mode_owner(nf), mode_s0(nf), mode_s1(nf))
       omega = omega_
-      Vconst = Vconst_
+      Vconst_c = Vconst_c_
+      Vconst = real(Vconst_c, dp)
       Vlin = Vlin_
       mode_owner = mode_owner_
 
@@ -68,8 +88,22 @@ contains
       nstate_per_qd = nstate_per_qd_
       n_cavity = n_cavity_
 
-      ! Cavity states do not couple to phonons, so those slices must already
-      ! be zero in the input matrix.
+      ! Enforce Hermiticity for complex TC constants.
+      if (maxval(abs(Vconst_c - transpose(conjg(Vconst_c)))) > 1.d-10) then
+         error stop 'Complex Vconst must be Hermitian in tchybrid.f90'
+      end if
+      do i = 1, ns
+         if (abs(aimag(Vconst_c(i,i))) > 1.d-10) then
+            error stop 'Complex Vconst diagonal must be real in tchybrid.f90'
+         end if
+      end do
+      imag_max = maxval(abs(aimag(Vconst_c)))
+      if (imag_max <= 1.d-12) then
+         write(*,'(A)') 'INFO[tchybrid]: Vconst is numerically real; continuing in complex TC mode.'
+      else
+         write(*,'(A,1X,ES12.4)') 'INFO[tchybrid]: Vconst has nonzero imaginary couplings; max|Im(Vconst)| =', imag_max
+      end if
+
       if (n_cavity > 0) then
          if (ns - n_cavity < 0) then
             error stop 'Invalid cavity block: n_cavity exceeds ns in tchybrid.f90'
@@ -81,7 +115,6 @@ contains
       end if
 
       call cache_mode_bounds(ns)
-
       cayley = .true.
    end subroutine
 
@@ -132,12 +165,12 @@ contains
       end if
    end subroutine
 
-   subroutine pot(q, V)
+   subroutine pot_real(q, V)
       use pes, only : mass, ns, nf, omega
       real(dp), intent(in) :: q(nf)
       real(dp), intent(out) :: V(ns,ns)
 
-      integer :: i, n, m, s0, s1, ns_ex
+      integer :: i, n, s0, s1
       real(dp) :: V0
 
       ! Build diabatic potential: start from the constant part and add
@@ -145,8 +178,6 @@ contains
       ! mode's active electronic block.
       V = Vconst
       V0 = 0.5d0 * sum(mass*(omega*q)**2)
-      ns_ex = ns - n_cavity
-      if (ns_ex < 0) ns_ex = 0
 
       do i = 1, nf
          ! Keep the explicit loop: each mode can target a different block,
@@ -158,35 +189,59 @@ contains
          end if
       end do
 
-      ! Add harmonic diagonal contribution only to electronic (non-cavity)
-      ! states (1..ns_ex). Cavity states are excluded by design.
-      do n = 1, ns_ex
+      ! The harmonic nuclear energy is a scalar V0(q) * I. It must be added
+      ! to every diabatic state; otherwise photon states are artificially
+      ! detuned from QD states by the bath energy.
+      do n = 1, ns
          V(n,n) = V(n,n) + V0
       end do
    end subroutine
 
-   subroutine grad(q, G)
+   subroutine pot_complex(q, V)
+      use pes, only : mass, ns, nf, omega
+      real(dp), intent(in) :: q(nf)
+      complex(dpc), intent(out) :: V(ns,ns)
+      integer :: i, n, s0, s1
+      real(dp) :: V0
+
+      if (.not. use_complex_vconst) then
+         V = cmplx(Vconst, 0.d0, kind=dpc)
+      else
+         V = Vconst_c
+      end if
+      V0 = 0.5d0 * sum(mass*(omega*q)**2)
+
+      do i = 1, nf
+         s0 = mode_s0(i)
+         s1 = mode_s1(i)
+         if (s1 >= s0) then
+            V(s0:s1,s0:s1) = V(s0:s1,s0:s1) + q(i) * cmplx(Vlin(i,s0:s1,s0:s1), 0.d0, kind=dpc)
+         end if
+      end do
+
+      do n = 1, ns
+         V(n,n) = V(n,n) + cmplx(V0, 0.d0, kind=dpc)
+      end do
+   end subroutine
+
+   subroutine grad_real(q, G)
       use pes, only : mass, nf, ns, omega, cayley
       real(dp), intent(in) :: q(:)
       real(dp), intent(out) :: G(nf,ns,ns)
 
-      integer :: n, ns_ex
+      integer :: n
       real(dp), allocatable :: G0(:)
 
       ! Build gradient tensor G(i,:,:) = dV/dq_i.
       ! For efficiency we copy the precomputed linear tensors `Vlin` into
       ! `G` and then add the harmonic diagonal term if required.
       G = Vlin
-      ns_ex = ns - n_cavity
-      if (ns_ex < 0) then
-         error stop 'Invalid block-structure (ns_ex < 0) parameters in tchybrid.f90'
-      end if
 
       if (cayley) return
 
       allocate(G0(nf))
       G0 = mass*omega**2 * q
-      do n = 1, ns_ex
+      do n = 1, ns
          G(:,n,n) = G(:,n,n) + G0
       end do
       deallocate(G0)
@@ -198,8 +253,9 @@ contains
    ! - `q` : phonon coordinates (size `nf`)
    ! - `U` : matrix of adiabatic eigenvectors (size ns x ns); column `a`
    !         is the eigenvector for which we compute derivatives.
-   ! - `a` : adiabatic-state index (integer). If `a` is in the cavity
-   !         region (> ns_ex) the routine returns immediately.
+   ! - `a` : adiabatic-state index (integer). The eigenvector may contain
+   !         both QD and cavity components, so forces are evaluated from
+   !         its QD components through the owner-restricted Vlin blocks.
    !
    ! Outputs:
    ! - `dvdq(i)` = <U_a | dV/dq_i | U_a> for each phonon mode i.
@@ -216,21 +272,15 @@ contains
    ! window s0:s1, compute tmp = Vlin(i,block)*Ublk and then
    ! dvdq(i) = dot_product(Ublk,tmp) which equals <U_a|dV/dq_i|U_a>.
    subroutine grad_a_tchybrid(q, U, a, dvdq)
-      use pes, only : nf, ns, cayley, mass, omega
+      use pes, only : nf, cayley, mass, omega
       real(dp), intent(in) :: q(:), U(:,:)
       integer :: a
       real(dp), intent(out) :: dvdq(nf)
 
-      integer :: i, s0, s1, ns_ex
+      integer :: i, s0, s1
       real(dp), allocatable :: Ublk(:), tmp(:)
 
       dvdq = 0.d0
-      ns_ex = ns - n_cavity
-      if (ns_ex < 0) then
-         error stop 'Invalid block-structure (ns_ex < 0) parameters in tchybrid.f90'
-      end if
-      ! If `a` indexes a cavity state, there is no phonon coupling.
-      if (a > ns_ex) return
       do i = 1, nf
          ! Use the same owner-restricted subspace in adiabatic force evaluation.
          s0 = mode_s0(i)
@@ -249,11 +299,44 @@ contains
       end if
    end subroutine
 
+   subroutine grad_a_tchybrid_complex(q, U, a, dvdq)
+      use pes, only : nf, cayley, mass, omega
+      real(dp), intent(in) :: q(:)
+      complex(dpc), intent(in) :: U(:,:)
+      integer :: a
+      real(dp), intent(out) :: dvdq(nf)
+      integer :: i, s0, s1
+      complex(dpc), allocatable :: Ublk(:), tmp(:)
+      complex(dpc) :: z
+
+      dvdq = 0.d0
+
+      do i = 1, nf
+         s0 = mode_s0(i)
+         s1 = mode_s1(i)
+         if (s1 < s0) cycle
+         Ublk = U(s0:s1, a)
+         tmp = matmul(Vlin(i, s0:s1, s0:s1), Ublk)
+         z = dot_product(Ublk, tmp)
+         dvdq(i) = real(z, dp)
+      end do
+
+      if (.not. cayley) then
+         dvdq = dvdq + mass * omega**2 * q
+      end if
+   end subroutine
+
    ! Return a copy of the constant (q-independent) diabatic matrix.
    subroutine get_vconst(Vconst_)
       use pes, only : ns
       real(dp), intent(out) :: Vconst_(ns,ns)
-      Vconst_ = Vconst
+      if (use_complex_vconst) then
+         ! Keep TC propagation fully complex; this getter returns only real
+         ! part for compatibility with legacy real interfaces.
+         Vconst_ = real(Vconst_c, dp)
+      else
+         Vconst_ = Vconst
+      end if
    end subroutine
 
    ! Return a copy of the per-mode linear coupling tensors Vlin(i,:,:)
