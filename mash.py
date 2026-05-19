@@ -96,6 +96,7 @@ t_loop0 = None
 # Read input parameters
 # ============================================================
 args = model.read_args()
+r0_print(f"MASH calculation started at: {time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
 
 def announce_tc_setup(args):
     if args.model == "tc":

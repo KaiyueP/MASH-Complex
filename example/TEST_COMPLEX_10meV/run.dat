@@ -957,9 +957,9 @@ Discarded : 0
 
 ================ Timing ================
 MPI ranks             : 1
-Total wall time (max) : 0:03:15.570
-Loop wall time  (max) : 0:03:15.490
-Fortran time   (max)  : 0:03:14.142  (99.3% of loop)
+Total wall time (max) : 0:05:20.389
+Loop wall time  (max) : 0:05:20.296
+Fortran time   (max)  : 0:03:14.930  (60.9% of loop)
 Requested trajectories: 12800
 Target effective traj : 12800  (npar=128)
 ========================================

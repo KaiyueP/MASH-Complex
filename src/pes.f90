@@ -327,58 +327,44 @@ module pes
       complex(dpc), intent(in) :: cad(:), U(:,:)
       real(dp), intent(out) :: dj(nf)
       integer :: a,b
-      real(dp), allocatable :: d(:,:), Gdia(:,:,:)
+      real(dp), allocatable :: Gdia(:,:,:)
       complex(dpc), allocatable :: tmp(:)
-      complex(dpc) :: gka
+      complex(dpc) :: dka
       real(dp) :: denom
 !
 !     Direction of momentum rescaling/reversal for complex adiabatic basis.
-!     Uses d(i,k,a) = Re[ <k|dV/dq_i|a> / (Va - Vk) ].
+!     Keep the complex NAC until forming Re[c_k^* d_ka c_a].
 !
-      allocate(d(nf,ns), Gdia(nf,ns,ns), tmp(ns))
+      allocate(Gdia(nf,ns,ns), tmp(ns))
       call grad(q,Gdia)
       dj = 0.d0
 
       do i=1,nf
          tmp = matmul(Gdia(i,:,:), U(:,a))
          do k=1,ns
-            if (k.eq.a) then
-               d(i,k) = 0.d0
-            else
+            if (k.ne.a) then
                denom = Vad(a)-Vad(k)
                if (abs(denom).gt.1.d-14) then
-                  gka = dot_product(U(:,k), tmp)
-                  d(i,k) = real(gka/denom)
-               else
-                  d(i,k) = 0.d0
+                  dka = dot_product(U(:,k), tmp) / denom
+                  dj(i) = dj(i) + real(conjg(cad(k)) * dka * cad(a), dp)
                end if
             end if
          end do
-      end do
-      do k=1,ns
-         dj = dj + d(:,k)*real(conjg(cad(k))*cad(a))
       end do
 
       do i=1,nf
          tmp = matmul(Gdia(i,:,:), U(:,b))
          do k=1,ns
-            if (k.eq.b) then
-               d(i,k) = 0.d0
-            else
+            if (k.ne.b) then
                denom = Vad(b)-Vad(k)
                if (abs(denom).gt.1.d-14) then
-                  gka = dot_product(U(:,k), tmp)
-                  d(i,k) = real(gka/denom)
-               else
-                  d(i,k) = 0.d0
+                  dka = dot_product(U(:,k), tmp) / denom
+                  dj(i) = dj(i) - real(conjg(cad(k)) * dka * cad(b), dp)
                end if
             end if
          end do
       end do
-      do k=1,ns
-         dj = dj - d(:,k)*real(conjg(cad(k))*cad(b))
-      end do
-      deallocate(d, Gdia, tmp)
+      deallocate(Gdia, tmp)
    end subroutine
 
 end module
