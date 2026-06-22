@@ -50,6 +50,7 @@ def _ckpt_meta(args, nf, ns):
         basis=str(args.basis),
         units=str(getattr(args, "units", "")),
         beta=float(args.beta),
+        boltzinit=bool(getattr(args, "boltzinit", False)),
         nf=int(nf),
         ns=int(ns),
         nt=int(args.nt),

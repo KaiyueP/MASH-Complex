@@ -22,6 +22,7 @@ eV = 1./27.2113961
 
 """ Define global variables """
 Vconst = 0.; nf_site = 0; ns = 0
+tc_n_qd = 0; tc_nstate_per_qd = 0; tc_n_cavity = 0
 w_low = 0.; c_low = 0.; w_intra = 0.; c_intra = 0.
 
 def read_args():
@@ -44,6 +45,8 @@ def read_args():
                         help="Nuclear sampling. classical/cl=classical, wigner/wig=thermal wigner, GS=ground state Wigner, clzero=classical T=0, WP=wavepacket",
                         choices=['classical','cl','wigner','wig','GS','clzero','WP'])
     parser.add_argument("-elsamp",type=str,default='focused',choices=["focused","theta"],help='Choice of initial distribution')
+    parser.add_argument("-boltzinit", action="store_true",
+                        help="For tc model, sample the initial electronic state from the Boltzmann distribution within the QD block containing -init.")
     parser.add_argument("-beta",type=float,default=1.,help="Reciprocal temperature [in a.u.]")
     parser.add_argument("-T",type=float,default=0,help="Temperature [in kelvin]")
     # Debugging
@@ -103,6 +106,7 @@ def read_args():
     print("Initial momentum: ",args.pinit)
     print("Nuclear sampling: ",args.nucsamp)
     print("Electronic sampling: ",args.elsamp)
+    print("Boltzmann initial QD distribution: ",args.boltzinit)
     print("Debug: ",args.debug)
     print("Ead computation: ",args.ead)
     print("Complex version: ",args.complex_version)
@@ -130,6 +134,7 @@ def read_args():
 """======== Initialize system ========="""
 def setup_model(args):
     global Vconst, nf_site, w_low, c_low, w_intra, c_intra, ns
+    global tc_n_qd, tc_nstate_per_qd, tc_n_cavity
     model = args.model
     epsilon = args.epsilon
     Delta = args.Delta
@@ -197,6 +202,9 @@ def setup_model(args):
     
     elif model == 'tc':
         Vconst, omega, Vlin, mode_owner, n_qd, nstate_per_qd, n_cavity, ns, nf = setup_tc_model(True)
+        tc_n_qd = n_qd
+        tc_nstate_per_qd = nstate_per_qd
+        tc_n_cavity = n_cavity
 
     elif model=='fmo3':
         ns = 3
@@ -686,6 +694,26 @@ def sample(args,mass,omega,nf,ns):
             q[:,j] = np.random.normal(qmean,qsig,nf)
             p[:,j] = np.random.normal(pmean,psig,nf)
 
+        init_state = args.init
+        if args.boltzinit:
+            if args.model != 'tc':
+                raise ValueError("-boltzinit is currently defined only for the tc model.")
+            if init_state is None:
+                raise ValueError("-boltzinit requires -init to select which QD block to thermalize.")
+            if tc_n_qd <= 0 or tc_nstate_per_qd <= 0:
+                raise ValueError("TC metadata unavailable; cannot build Boltzmann initial QD distribution.")
+
+            qd_idx = init_state // tc_nstate_per_qd
+            if qd_idx >= tc_n_qd:
+                raise ValueError("-init points to a cavity state; choose a state inside the QD to thermalize.")
+
+            qd_start = qd_idx * tc_nstate_per_qd
+            qd_states = np.arange(qd_start, qd_start + tc_nstate_per_qd)
+            qd_energies = np.real(np.diag(Vconst)[qd_states])
+            weights = np.exp(-beta * (qd_energies - np.min(qd_energies)))
+            weights /= np.sum(weights)
+            init_state = np.random.choice(qd_states, p=weights)
+
         """ Electronic sampling """
         if args.elsamp in ['theta']:
             """ Theta sampling: sample from region where Theta_init(c) = 1 """
@@ -698,7 +726,7 @@ def sample(args,mass,omega,nf,ns):
                 l=0
                 for k in range(ns):
                     if pop[k]>pop[l]: l=k # Find index of state with largest population
-                if l==args.init:
+                if l==init_state:
                     qe[:,j] = qej; pe[:,j] = pej
                     break
         elif args.elsamp=='focused':
@@ -707,7 +735,7 @@ def sample(args,mass,omega,nf,ns):
             Hn = np.sum(1./np.arange(1,ns+1))
             alpha = (ns-1.)/(Hn-1.)
             Pn = np.ones(ns)*(alpha-1.)/(alpha*ns)
-            Pn[args.init] = 1./ns + (ns-1.)/(alpha*ns)
+            Pn[init_state] = 1./ns + (ns-1.)/(alpha*ns)
             phi = np.random.uniform(0,2*np.pi,ns)
             qe[:,j] = np.cos(phi)*np.sqrt(Pn)
             pe[:,j] = np.sin(phi)*np.sqrt(Pn)
