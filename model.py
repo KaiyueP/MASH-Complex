@@ -51,7 +51,8 @@ def read_args():
     parser.add_argument("-T",type=float,default=0,help="Temperature [in kelvin]")
     # Debugging
     parser.add_argument("-debug",action="store_true",help='Run one debug trajectory and plot energy conservation etc.')
-    parser.add_argument("-seed",type=float,default=None,help="If set, initialize random seed.")
+    parser.add_argument("-seed",type=int,default=None,help="If set, initialize random seed.")
+    parser.add_argument("-rho", action="store_true", help="Also compute and save the full electronic density matrix in the representation selected by -basis.")
     parser.add_argument("-ead", action="store_true", help="Also compute and output <Ead>(t)=<sum_a Phi_a^ad(t) * Vad_a(Q(t))>.")
     # Convergence
     parser.add_argument("-dt",default=41,type=float,help="Time step")
@@ -109,6 +110,7 @@ def read_args():
     print("Boltzmann initial QD distribution: ",args.boltzinit)
     print("Debug: ",args.debug)
     print("Ead computation: ",args.ead)
+    print("Density matrix output: ", args.rho)
     print("Complex version: ",args.complex_version)
     print("Seed: ",args.seed)
 
@@ -126,7 +128,7 @@ def read_args():
         args.beta = 1./(kB*args.T)
 
     if not args.seed is None:
-        np.random.seed(args.seed)
+        np.random.seed(int(args.seed))
     
     return args
 
@@ -773,4 +775,28 @@ def savedata(B,t,args,name):
     out = np.column_stack([tout,B])
     if name is None: name=args.obstyp
     np.savetxt('%s.out'%name,out)
+
+def save_density_matrix(rho_re, rho_im, t, args, name="rho"):
+    """
+    Save the full electronic density matrix as a compressed NumPy archive.
+
+    The density matrix is stored in the representation selected by ``-basis``.
+    We save it in binary form because a full (nt+1, ns, ns) tensor is usually
+    far too large for a text file.
+
+    Stored arrays in ``name.npz``:
+      - time   : shape (nt+1,)
+      - rho_re : shape (nt+1, ns, ns)
+      - rho_im : shape (nt+1, ns, ns)
+    """
+    tout = t/fs if args.units in ['cmm1', 'fs'] else t
+    np.savez_compressed(
+        f"{name}.npz",
+        time=tout,
+        rho_re=rho_re,
+        rho_im=rho_im,
+        basis=np.array(args.basis),
+        initbasis=np.array(args.initbasis),
+        units=np.array(args.units),
+    )
 

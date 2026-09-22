@@ -16,7 +16,7 @@ QD_2="3.9nm_3ML" #medium energy
 QD_3="3.0nm_4ML" #high energy
 QD_spacing = 20 *1e-9 #nm to m
 N_QD = nlayers * nqd_per_layer
-
+g_s_ref_eV=1e-3 #eV to au #coupling strength
 # Fundamental constants and unit conversions
 kb=1.380649e-23
 c=3e8 #m/s
@@ -101,7 +101,7 @@ E_cavity = hbar*c*np.sqrt(k_x**2 + k_z**2)*jtoau #j to au
 x_QD=np.arange(nqd_per_layer)*QD_spacing
 d_v = 10e-9 #nm to m, spacing between layers
 z_QD = np.array([L_cavity/2 - d_v, L_cavity/2, L_cavity/2 + d_v ]) #m
-g_s_ref=1e-3*evtoau #eV to au #coupling strength
+g_s_ref=g_s_ref_eV*evtoau #eV to au #coupling strength
 
 
 #reorg in eV

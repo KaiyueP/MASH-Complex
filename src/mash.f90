@@ -215,6 +215,35 @@ contains
       pop = overn + alpha*(abs(c)**2 - overn)
    end subroutine
 
+   subroutine rho_phi(c, rho_re, rho_im)
+      use pes, only : ns
+      complex(dpc), intent(in) :: c(:)
+      real(dp), intent(out) :: rho_re(:,:), rho_im(:,:)
+!
+!  Calculate the full Phi-estimator density matrix in the chosen representation.
+!  For n /= m: rho_nm = alpha * c_n^* c_m
+!  For n  = m: rho_nn = 1/ns + alpha * (|c_n|^2 - 1/ns)
+!
+      complex(dpc) :: z
+      integer :: n, m
+      real(dp) :: overn
+
+      overn = 1.d0/ns
+
+      do n = 1, ns
+         do m = 1, ns
+            z = alpha * dconjg(c(n)) * c(m)
+            rho_re(n,m) = dble(z)
+            rho_im(n,m) = aimag(z)
+         end do
+      end do
+
+      do n = 1, ns
+         rho_re(n,n) = overn + alpha * (abs(c(n))**2 - overn)
+         rho_im(n,n) = 0.d0
+      end do
+   end subroutine
+
    subroutine pops_ad_ead(q, qe, pe, pop_ad, ead)
       use pes, only : ns, potad, potad_complex, tc_complex_mode
       real(dp), intent(in)  :: q(:), qe(:), pe(:)

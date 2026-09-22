@@ -743,3 +743,356 @@ subroutine runpar_ead(q, p, qe, pe, bt, Et, Ead, V0t, ierr, rep, dt, nt, nf, ns,
 
    deallocate(dbt, dEt, dEad, dV0)
 end subroutine
+
+
+subroutine runtrj_obs_rho(q, p, qe, pe, bt, Et, rho_re, rho_im, rep, dt, ierr, nt, nf_, ns)
+   use types
+   use pes,  only : potad, potad_complex, grad_a, grad_a_c, mass, tc_complex_mode
+   use mash, only : evolve, evolve_c, cstate, cstate_c, pops_phi, rho_phi
+   integer, intent(in) :: nt, nf_, ns
+   real(dp), intent(in) :: dt
+   character, intent(in) :: rep
+   real(dp), intent(inout) :: q(nf_), p(nf_), qe(ns), pe(ns)
+   real(dp), intent(out) :: bt(nt+1,ns), Et(nt+1)
+   real(dp), intent(out) :: rho_re(nt+1,ns,ns), rho_im(nt+1,ns,ns)
+   integer, intent(out) :: ierr
+
+   real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
+   real(dp), allocatable :: U0(:,:), Vad0(:), q0(:)
+   complex(dpc), allocatable :: Uc(:,:), U0c(:,:)
+   complex(dpc), allocatable :: c(:)
+   integer :: it, a
+
+   ierr = 0
+
+   allocate(Vad(ns), dvdq(nf_), c(ns))
+
+   if (rep.eq.'e') then
+      allocate(Vad0(ns), q0(nf_))
+      q0 = 0.d0
+      if (tc_complex_mode) then
+         allocate(U0c(ns,ns))
+         call potad_complex(q0, Vad0, U0c)
+      else
+         allocate(U0(ns,ns))
+         call potad(q0, Vad0, U0)
+      end if
+      deallocate(Vad0, q0)
+   end if
+
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q, Vad, Uc)
+      call cstate_c(qe, pe, Uc, a)
+      call grad_a_c(q, Uc, a, dvdq)
+   else
+      allocate(U(ns,ns))
+      call potad(q, Vad, U)
+      call cstate(qe, pe, U, a)
+      call grad_a(q, U, a, dvdq)
+   end if
+
+   do it = 1, nt
+      if (rep.eq.'d') then
+         c = dcmplx(qe, pe)
+      else if (rep.eq.'a') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
+      else if (rep.eq.'e') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
+      end if
+
+      call pops_phi(c, bt(it,:))
+      call rho_phi(c, rho_re(it,:,:), rho_im(it,:,:))
+      Et(it) = Vad(a) + 0.5d0*sum(p**2/mass)
+
+      if (tc_complex_mode) then
+         call evolve_c(q, p, qe, pe, Vad, Uc, dvdq, a, dt)
+      else
+         call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      end if
+
+      if (q(1).ne.q(1)) then
+         ierr = 1
+         exit
+      end if
+   end do
+
+   if (ierr.eq.0) then
+      if (rep.eq.'d') then
+         c = dcmplx(qe, pe)
+      else if (rep.eq.'a') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
+      else if (rep.eq.'e') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
+      end if
+
+      call pops_phi(c, bt(nt+1,:))
+      call rho_phi(c, rho_re(nt+1,:,:), rho_im(nt+1,:,:))
+      Et(nt+1) = Vad(a) + 0.5d0*sum(p**2/mass)
+   else
+      bt(it:nt+1,:)       = 0.d0
+      Et(it:nt+1)         = 0.d0
+      rho_re(it:nt+1,:,:) = 0.d0
+      rho_im(it:nt+1,:,:) = 0.d0
+   end if
+
+   if (allocated(U0)) deallocate(U0)
+   if (allocated(U0c)) deallocate(U0c)
+   if (allocated(U)) deallocate(U)
+   if (allocated(Uc)) deallocate(Uc)
+   deallocate(Vad, dvdq, c)
+end subroutine
+
+
+subroutine runtrj_obs_ead_rho(q, p, qe, pe, bt, Et, Ead, V0t, rho_re, rho_im, rep, dt, ierr, nt, nf_, ns)
+   use types
+   use pes,  only : potad, potad_complex, grad_a, grad_a_c, mass, omega, tc_complex_mode
+   use mash, only : evolve, evolve_c, cstate, cstate_c, pops_phi, rho_phi
+   integer, intent(in) :: nt, nf_, ns
+   real(dp), intent(in) :: dt
+   character, intent(in) :: rep
+   real(dp), intent(inout) :: q(nf_), p(nf_), qe(ns), pe(ns)
+   real(dp), intent(out) :: bt(nt+1,ns), Et(nt+1), Ead(nt+1), V0t(nt+1)
+   real(dp), intent(out) :: rho_re(nt+1,ns,ns), rho_im(nt+1,ns,ns)
+   integer, intent(out) :: ierr
+
+   real(dp), allocatable :: Vad(:), U(:,:), dvdq(:)
+   real(dp), allocatable :: U0(:,:), Vad0(:), q0(:)
+   complex(dpc), allocatable :: Uc(:,:), U0c(:,:)
+   complex(dpc), allocatable :: c(:)
+   real(dp), allocatable :: pop_ad(:)
+   integer :: it, a
+
+   ierr = 0
+
+   allocate(Vad(ns), dvdq(nf_), c(ns), pop_ad(ns))
+
+   if (rep.eq.'e') then
+      allocate(Vad0(ns), q0(nf_))
+      q0 = 0.d0
+      if (tc_complex_mode) then
+         allocate(U0c(ns,ns))
+         call potad_complex(q0, Vad0, U0c)
+      else
+         allocate(U0(ns,ns))
+         call potad(q0, Vad0, U0)
+      end if
+      deallocate(Vad0, q0)
+   end if
+
+   if (tc_complex_mode) then
+      allocate(Uc(ns,ns))
+      call potad_complex(q, Vad, Uc)
+      call cstate_c(qe, pe, Uc, a)
+      call grad_a_c(q, Uc, a, dvdq)
+   else
+      allocate(U(ns,ns))
+      call potad(q, Vad, U)
+      call cstate(qe, pe, U, a)
+      call grad_a(q, U, a, dvdq)
+   end if
+
+   do it = 1, nt
+      if (rep.eq.'d') then
+         c = dcmplx(qe, pe)
+      else if (rep.eq.'a') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
+      else if (rep.eq.'e') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
+      end if
+
+      call pops_phi(c, bt(it,:))
+      call rho_phi(c, rho_re(it,:,:), rho_im(it,:,:))
+      Et(it) = Vad(a) + 0.5d0*sum(p**2/mass)
+
+      if (tc_complex_mode) then
+         c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+      else
+         c = dcmplx(matmul(qe, U), matmul(pe, U))
+      end if
+      call pops_phi(c, pop_ad)
+      Ead(it) = sum(pop_ad * Vad)
+
+      if (allocated(omega)) then
+         V0t(it) = 0.5d0 * sum(mass * (omega*q)**2)
+      else
+         V0t(it) = 0.d0
+      end if
+
+      if (tc_complex_mode) then
+         call evolve_c(q, p, qe, pe, Vad, Uc, dvdq, a, dt)
+      else
+         call evolve(q, p, qe, pe, Vad, U, dvdq, a, dt)
+      end if
+
+      if (q(1).ne.q(1)) then
+         ierr = 1
+         exit
+      end if
+   end do
+
+   if (ierr.eq.0) then
+      if (rep.eq.'d') then
+         c = dcmplx(qe, pe)
+      else if (rep.eq.'a') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U), matmul(pe, U))
+         end if
+      else if (rep.eq.'e') then
+         if (tc_complex_mode) then
+            c = matmul(conjg(transpose(U0c)), cmplx(qe, pe, kind=dpc))
+         else
+            c = dcmplx(matmul(qe, U0), matmul(pe, U0))
+         end if
+      end if
+
+      call pops_phi(c, bt(nt+1,:))
+      call rho_phi(c, rho_re(nt+1,:,:), rho_im(nt+1,:,:))
+      Et(nt+1) = Vad(a) + 0.5d0*sum(p**2/mass)
+
+      if (tc_complex_mode) then
+         c = matmul(conjg(transpose(Uc)), cmplx(qe, pe, kind=dpc))
+      else
+         c = dcmplx(matmul(qe, U), matmul(pe, U))
+      end if
+      call pops_phi(c, pop_ad)
+      Ead(nt+1) = sum(pop_ad * Vad)
+
+      if (allocated(omega)) then
+         V0t(nt+1) = 0.5d0 * sum(mass * (omega*q)**2)
+      else
+         V0t(nt+1) = 0.d0
+      end if
+   else
+      bt(it:nt+1,:)       = 0.d0
+      Et(it:nt+1)         = 0.d0
+      Ead(it:nt+1)        = 0.d0
+      V0t(it:nt+1)        = 0.d0
+      rho_re(it:nt+1,:,:) = 0.d0
+      rho_im(it:nt+1,:,:) = 0.d0
+   end if
+
+   if (allocated(U0)) deallocate(U0)
+   if (allocated(U0c)) deallocate(U0c)
+   if (allocated(U)) deallocate(U)
+   if (allocated(Uc)) deallocate(Uc)
+   deallocate(Vad, dvdq, c, pop_ad)
+end subroutine
+
+
+subroutine runpar_rho(q, p, qe, pe, bt, Et, rho_re, rho_im, ierr, rep, dt, nt, nf, ns, np)
+   use types
+   integer :: nt, nf, ns, np
+   real(dp), intent(in) :: dt
+   real(dp), intent(inout) :: q(nf,np), p(nf,np), qe(ns,np), pe(ns,np)
+   real(dp), intent(out) :: bt(nt+1,ns)
+   real(dp), intent(out) :: Et(nt+1)
+   real(dp), intent(out) :: rho_re(nt+1,ns,ns), rho_im(nt+1,ns,ns)
+   integer, intent(out) :: ierr(np)
+   character, intent(in) :: rep
+
+   real(dp), allocatable :: dbt(:,:), dEt(:)
+   real(dp), allocatable :: drho_re(:,:,:), drho_im(:,:,:)
+   integer :: j
+
+   allocate(dbt(nt+1,ns), dEt(nt+1), drho_re(nt+1,ns,ns), drho_im(nt+1,ns,ns))
+
+   bt = 0.d0
+   Et = 0.d0
+   rho_re = 0.d0
+   rho_im = 0.d0
+
+   do j=1,np
+      call runtrj_obs_rho(q(:,j), p(:,j), qe(:,j), pe(:,j), dbt, dEt, drho_re, drho_im, rep, dt, ierr(j), nt, nf, ns)
+
+      if (ierr(j).ne.0) then
+         dbt      = 0.d0
+         dEt      = 0.d0
+         drho_re  = 0.d0
+         drho_im  = 0.d0
+      end if
+
+      bt     = bt     + dbt
+      Et     = Et     + dEt
+      rho_re = rho_re + drho_re
+      rho_im = rho_im + drho_im
+   end do
+
+   deallocate(dbt, dEt, drho_re, drho_im)
+end subroutine
+
+
+subroutine runpar_ead_rho(q, p, qe, pe, bt, Et, Ead, V0t, rho_re, rho_im, ierr, rep, dt, nt, nf, ns, np)
+   use types
+   integer :: nt, nf, ns, np
+   real(dp), intent(in) :: dt
+   real(dp), intent(inout) :: q(nf,np), p(nf,np), qe(ns,np), pe(ns,np)
+   real(dp), intent(out) :: bt(nt+1,ns)
+   real(dp), intent(out) :: Et(nt+1)
+   real(dp), intent(out) :: Ead(nt+1)
+   real(dp), intent(out) :: V0t(nt+1)
+   real(dp), intent(out) :: rho_re(nt+1,ns,ns), rho_im(nt+1,ns,ns)
+   integer, intent(out) :: ierr(np)
+   character, intent(in) :: rep
+
+   real(dp), allocatable :: dbt(:,:), dEt(:), dEad(:), dV0(:)
+   real(dp), allocatable :: drho_re(:,:,:), drho_im(:,:,:)
+   integer :: j
+
+   allocate(dbt(nt+1,ns), dEt(nt+1), dEad(nt+1), dV0(nt+1), drho_re(nt+1,ns,ns), drho_im(nt+1,ns,ns))
+
+   bt = 0.d0
+   Et = 0.d0
+   Ead = 0.d0
+   V0t = 0.d0
+   rho_re = 0.d0
+   rho_im = 0.d0
+
+   do j=1,np
+      call runtrj_obs_ead_rho(q(:,j), p(:,j), qe(:,j), pe(:,j), dbt, dEt, dEad, dV0, drho_re, drho_im, rep, dt, ierr(j), nt, nf, ns)
+
+      if (ierr(j).ne.0) then
+         dbt      = 0.d0
+         dEt      = 0.d0
+         dEad     = 0.d0
+         dV0      = 0.d0
+         drho_re  = 0.d0
+         drho_im  = 0.d0
+      end if
+
+      bt     = bt     + dbt
+      Et     = Et     + dEt
+      Ead    = Ead    + dEad
+      V0t    = V0t    + dV0
+      rho_re = rho_re + drho_re
+      rho_im = rho_im + drho_im
+   end do
+
+   deallocate(dbt, dEt, dEad, dV0, drho_re, drho_im)
+end subroutine

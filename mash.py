@@ -57,10 +57,12 @@ def _ckpt_meta(args, nf, ns):
         dt=float(args.dt),
         npar=int(args.npar),
         ead=bool(getattr(args, "ead", False)),
+        rho=bool(getattr(args, "rho", False)),
     )
 
 
-def save_checkpoint(fname, meta, Bt_sum, success, attempted, discarded, Ead_sum=None):
+def save_checkpoint(fname, meta, Bt_sum, success, attempted, discarded,
+                    Ead_sum=None, Rho_re_sum=None, Rho_im_sum=None):
     """Atomic save: write tmp then rename."""
     tmp = fname + ".tmp.npz"
     payload = dict(
@@ -72,6 +74,10 @@ def save_checkpoint(fname, meta, Bt_sum, success, attempted, discarded, Ead_sum=
     )
     if Ead_sum is not None:
         payload["Ead_sum"] = Ead_sum
+    if Rho_re_sum is not None:
+        payload["Rho_re_sum"] = Rho_re_sum
+    if Rho_im_sum is not None:
+        payload["Rho_im_sum"] = Rho_im_sum
     np.savez(tmp, **payload)
     os.replace(tmp, fname)
 
@@ -84,8 +90,9 @@ def load_checkpoint(fname):
     attempted = int(z["attempted"])
     discarded = int(z["discarded"])
     Ead_sum = z["Ead_sum"] if "Ead_sum" in z.files else None
-    return meta, Bt_sum, success, attempted, discarded, Ead_sum
-
+    Rho_re_sum = z["Rho_re_sum"] if "Rho_re_sum" in z.files else None
+    Rho_im_sum = z["Rho_im_sum"] if "Rho_im_sum" in z.files else None
+    return meta, Bt_sum, success, attempted, discarded, Ead_sum, Rho_re_sum, Rho_im_sum
 
 # ---------------- timing ----------------
 t_total0 = time.perf_counter()
@@ -129,6 +136,13 @@ if mpi_enabled and obstyp != "pop":
     comm.Barrier()
     sys.exit(1)
 
+if getattr(args, "rho", False) and obstyp != "pop":
+    if rank == 0:
+        print("-rho currently only supported with -obstyp pop.")
+    if mpi_enabled:
+        comm.Barrier()
+    sys.exit(1)
+
 # OpenMP / BLAS threading control
 if npar > 1 and ("OMP_NUM_THREADS" not in os.environ):
     os.environ["OMP_NUM_THREADS"] = str(npar)
@@ -163,6 +177,8 @@ if obstyp == "pop":
     # Ead_local[:,0] = <Ead>(t)
     # Ead_local[:,1] = <V0>(t)
     Ead_local = np.zeros((nt + 1, 2), dtype=float) if getattr(args, "ead", False) else None
+    Rho_re_local = np.zeros((nt+1, ns, ns)) if getattr(args, 'rho', False) else None
+    Rho_im_local = np.zeros((nt+1, ns, ns)) if getattr(args, 'rho', False) else None
 
 # ============================================================
 # Checkpoint / restart state (offsets from previous runs)
@@ -174,6 +190,8 @@ do_restart = bool(getattr(args, "restart", False))
 
 Bt_offset = np.zeros((nt + 1, ns), dtype=float)
 Ead_offset = np.zeros((nt + 1, 2), dtype=float) if getattr(args, "ead", False) else None
+Rho_re_offset = np.zeros((nt + 1, ns, ns), dtype=float) if getattr(args, "rho", False) else None
+Rho_im_offset = np.zeros((nt + 1, ns, ns), dtype=float) if getattr(args, "rho", False) else None
 attempted_offset = 0
 success_offset = 0
 discarded_offset = 0
@@ -183,14 +201,14 @@ meta_now = _ckpt_meta(args, nf, ns)
 if do_restart and os.path.exists(ckptfile):
     if mpi_enabled:
         if rank == 0:
-            meta_old, Bt_offset, success_offset, attempted_offset, discarded_offset, Ead_offset = load_checkpoint(ckptfile)
+            meta_old, Bt_offset, success_offset, attempted_offset, discarded_offset, Ead_offset, Rho_re_offset, Rho_im_offset = load_checkpoint(ckptfile)
         else:
             meta_old = None
 
         meta_old = comm.bcast(meta_old, root=0)
 
         # sanity check meta on all ranks
-        for k in ["model", "obstyp", "basis", "units", "beta", "nf", "ns", "nt", "dt", "npar", "ead"]:
+        for k in ["model", "obstyp", "basis", "units", "beta", "nf", "ns", "nt", "dt", "npar", "ead", "rho"]:
             oldv = meta_old.get(k, None)
             newv = meta_now.get(k, None)
             if oldv != newv:
@@ -206,11 +224,17 @@ if do_restart and os.path.exists(ckptfile):
         if rank != 0:
             Bt_offset = np.zeros((nt + 1, ns), dtype=float)
             if getattr(args, "ead", False):
-                Ead_offset = np.zeros(nt + 1, dtype=float)
+                Ead_offset = np.zeros((nt + 1, 2), dtype=float)
+            if getattr(args, "rho", False):
+                Rho_re_offset = np.zeros((nt + 1, ns, ns), dtype=float)
+                Rho_im_offset = np.zeros((nt + 1, ns, ns), dtype=float)
 
         comm.Bcast(Bt_offset, root=0)
         if getattr(args, "ead", False):
             comm.Bcast(Ead_offset, root=0)
+        if getattr(args, "rho", False):
+            comm.Bcast(Rho_re_offset, root=0)
+            comm.Bcast(Rho_im_offset, root=0)
 
         if rank == 0:
             r0_print("")
@@ -223,8 +247,8 @@ if do_restart and os.path.exists(ckptfile):
             r0_print("")
 
     else:
-        meta_old, Bt_offset, success_offset, attempted_offset, discarded_offset, Ead_offset = load_checkpoint(ckptfile)
-        for k in ["model", "obstyp", "basis", "units", "beta", "nf", "ns", "nt", "dt", "npar", "ead"]:
+        meta_old, Bt_offset, success_offset, attempted_offset, discarded_offset, Ead_offset, Rho_re_offset, Rho_im_offset = load_checkpoint(ckptfile)
+        for k in ["model", "obstyp", "basis", "units", "beta", "nf", "ns", "nt", "dt", "npar", "ead", "rho"]:
             oldv = meta_old.get(k, None)
             newv = meta_now.get(k, None)
             if oldv != newv:
@@ -264,6 +288,10 @@ if nbatch_remaining == 0:
         if getattr(args, "ead", False):
             Ead_avg = Ead_offset / max(1, success_offset)
             model.savedata(Ead_avg, t, args, "Ead")
+        if getattr(args, "rho", False):
+            rho_re_avg = Rho_re_offset / max(1, success_offset)
+            rho_im_avg = Rho_im_offset / max(1, success_offset)
+            model.save_density_matrix(rho_re_avg, rho_im_avg, t, args, "rho")
         print("[restart] nothing remaining to run; wrote averages from checkpoint and exiting.")
     if mpi_enabled:
         comm.Barrier()
@@ -339,8 +367,15 @@ for step in range(max_steps):
         pe = np.array(pe0.copy(), order='F')
 
         t_call0 = time.perf_counter()
-        if getattr(args, "ead", False):
-            bt, Et, ead_batch, v0_batch, ierr = mashf90.runpar_ead(q, p, qe, pe, rep, dt, nt, nf, ns, npar)
+        if getattr(args, "rho", False) and args.ead:
+            bt, Et, ead_batch, v0_batch, rho_re_batch, rho_im_batch, ierr = mashf90.runpar_ead_rho(
+                q, p, qe, pe, rep, dt, nt, nf, ns, npar)
+        elif getattr(args, "rho", False):
+            bt, Et, rho_re_batch, rho_im_batch, ierr = mashf90.runpar_rho(
+                q, p, qe, pe, rep, dt, nt, nf, ns, npar)
+        elif args.ead:
+            bt, Et, ead_batch, v0_batch, ierr = mashf90.runpar_ead(
+                q, p, qe, pe, rep, dt, nt, nf, ns, npar)
         else:
             bt, Et, ierr = mashf90.runpar(q, p, qe, pe, rep, dt, nt, nf, ns, npar)
         t_fortran += (time.perf_counter() - t_call0)
@@ -373,6 +408,10 @@ for step in range(max_steps):
             Ead_local[:, 0] += ead_batch
             Ead_local[:, 1] += v0_batch
 
+        if getattr(args, "rho", False):
+            Rho_re_local += rho_re_batch
+            Rho_im_local += rho_im_batch
+
     # ---------------- checkpoint check ----------------
     if do_checkpoints and (next_ckpt_idx < len(checkpoint_targets)):
         done_batches_local = min(step + 1, nbatch_local)
@@ -394,11 +433,19 @@ for step in range(max_steps):
                 if getattr(args, "ead", False):
                     Ead_sum_new = np.zeros_like(Ead_local)
                     comm.Allreduce(Ead_local, Ead_sum_new, op=MPI.SUM)
+                if getattr(args, "rho", False):
+                    Rho_re_sum_new = np.zeros_like(Rho_re_local)
+                    Rho_im_sum_new = np.zeros_like(Rho_im_local)
+                    comm.Allreduce(Rho_re_local, Rho_re_sum_new, op=MPI.SUM)
+                    comm.Allreduce(Rho_im_local, Rho_im_sum_new, op=MPI.SUM)
             else:
                 Bt_sum_new = Bt_local
                 success_new = success_local
                 if getattr(args, "ead", False):
                     Ead_sum_new = Ead_local
+                if getattr(args, "rho", False):
+                    Rho_re_sum_new = Rho_re_local
+                    Rho_im_sum_new = Rho_im_local
 
             # Add offsets (IMPORTANT)
             Bt_total = Bt_offset + Bt_sum_new
@@ -412,12 +459,21 @@ for step in range(max_steps):
             else:
                 Ead_total = None
 
+            if getattr(args, "rho", False):
+                Rho_re_total = Rho_re_offset + Rho_re_sum_new
+                Rho_im_total = Rho_im_offset + Rho_im_sum_new
+            else:
+                Rho_re_total = None
+                Rho_im_total = None
+
             if rank == 0:
                 save_checkpoint(
                     ckptfile, meta_now,
                     Bt_total, success_total_ckpt,
                     attempted_total, discarded_total,
-                    Ead_sum=Ead_total
+                    Ead_sum=Ead_total,
+                    Rho_re_sum=Rho_re_total,
+                    Rho_im_sum=Rho_im_total
                 )
 
                 r0_print("")
@@ -436,6 +492,10 @@ for step in range(max_steps):
                 if getattr(args, "ead", False):
                     Ead_avg_now = Ead_total / max(1, success_total_ckpt)
                     model.savedata(Ead_avg_now, t, args, "Ead")
+                if getattr(args, "rho", False):
+                    rho_re_avg_now = Rho_re_total / max(1, success_total_ckpt)
+                    rho_im_avg_now = Rho_im_total / max(1, success_total_ckpt)
+                    model.save_density_matrix(rho_re_avg_now, rho_im_avg_now, t, args, "rho")
 
                 np.savetxt("log.out",
                            np.array([success_total_ckpt, attempted_total, discarded_total], dtype=np.int64),
@@ -460,12 +520,20 @@ if mpi_enabled:
     if getattr(args, "ead", False):
         Ead_sum_new = np.zeros_like(Ead_local)
         comm.Allreduce(Ead_local, Ead_sum_new, op=MPI.SUM)
+    if getattr(args, "rho", False):
+        Rho_re_sum_new = np.zeros_like(Rho_re_local)
+        Rho_im_sum_new = np.zeros_like(Rho_im_local)
+        comm.Allreduce(Rho_re_local, Rho_re_sum_new, op=MPI.SUM)
+        comm.Allreduce(Rho_im_local, Rho_im_sum_new, op=MPI.SUM)
 else:
     Bt_sum_new = Bt_local
     success_new = success_local
     if getattr(args, "ead", False):
         Ead_sum_new = Ead_local
-
+    if getattr(args, "rho", False):
+        Rho_re_sum_new = Rho_re_local
+        Rho_im_sum_new = Rho_im_local
+        
 if rank == 0:
     Bt_total = Bt_offset + Bt_sum_new
     success_total = success_offset + success_new
@@ -485,19 +553,30 @@ if rank == 0:
     else:
         Ead_total = None
 
+    if getattr(args, "rho", False):
+        Rho_re_total = Rho_re_offset + Rho_re_sum_new
+        Rho_im_total = Rho_im_offset + Rho_im_sum_new
+        rho_re_avg = Rho_re_total / max(1, success_total)
+        rho_im_avg = Rho_im_total / max(1, success_total)
+        model.save_density_matrix(rho_re_avg, rho_im_avg, t, args, "rho")
+    else:
+        Rho_re_total = None
+        Rho_im_total = None
+        
     # Always write a final checkpoint too
     if ckpt_enabled:
         save_checkpoint(
             ckptfile, meta_now,
             Bt_total, success_total,
             attempted_total, discarded_total,
-            Ead_sum=Ead_total
+            Ead_sum=Ead_total,
+            Rho_re_sum=Rho_re_total,
+            Rho_im_sum=Rho_im_total
         )
 
     np.savetxt("log.out",
                np.array([success_total, attempted_total, discarded_total], dtype=np.int64),
                fmt="%i")
-
 # ============================================================
 # Timing summary (report MAX across ranks)
 # ============================================================
