@@ -2,7 +2,7 @@
 import numpy as np
 import os
 import sys
-sys.path.insert(0,'/global/homes/k/kaiyuep/multimash-complex')
+sys.path.insert(0,'/sci/labs/eran.rabani/kaiyue.peng/MASH-Complex')
 import time
 import json
 
